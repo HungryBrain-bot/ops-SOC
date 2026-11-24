@@ -43,3 +43,15 @@
   from this environment.
 - Next: SOAR writer code with stub server and tests; then the connector
   interface and replay backend.
+
+## 2026-11-24 - SOAR writer
+
+- Built `opssoc/soar/`: one `SoarWriter` driver, XSOAR and Google SecOps
+  writers, a stdlib stub SOAR server, a CLI, and the case report model the
+  writer reads. Stdlib only at runtime.
+- Test push: `python -m opssoc.soar write --mode test` starts the stub and
+  sends over real HTTP. Both targets write successfully to the stub.
+- Verified: 17 tests pass; ruff clean. Not verified: anything against a real
+  XSOAR or SecOps instance (none exists).
+- Example report `examples/case_report.json` is hand-written and labelled so.
+- Added CI (pytest, ruff, SOAR test push per target). First run is this PR.
