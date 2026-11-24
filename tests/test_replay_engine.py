@@ -69,3 +69,28 @@ def test_sentinel_tables_loaded(replay):
     result = replay.hunt("SecurityEvent | where EventID == 4688 | count")
     assert result.rows[0]["Count"] > 0
     assert any("detection_As_Code" in p for p in result.provenance)
+
+
+@pytest.mark.skipif(not ALERTS.is_file(), reason="run `python -m opssoc.replay seed` first")
+def test_investigation_tools_on_the_emulator(replay, tmp_path):
+    """The agent's tools against the real emulator: a scripted turn (written here, not
+    model output) queries around a seeded A3 alert; the result is recorded as evidence
+    with the replay mapping label."""
+    from opssoc.agents.investigation import InvestigationAgent
+    from opssoc.llm import SpendTracker, Tier, ToolCall, Turn, Usage
+    from opssoc.llm.scripted import ScriptedProvider
+
+    alert = next(a for a in replay.list_alerts() if a["providerAlertId"].startswith("20cda3e9"))
+    kql = ("DeviceProcessEvents | where FileName =~ 'reg.exe' and ProcessCommandLine has "
+           "'save' | project Timestamp, DeviceName, InitiatingProcessFileName")
+    spend = SpendTracker(tmp_path / "s.jsonl", env={"OPSSOC_LLM_PRICES":
+                                                     '{"scripted-reasoning": [0, 0]}'})
+    provider = ScriptedProvider({Tier.REASONING: [
+        Turn("", [ToolCall("c1", "run_hunting_query", {"kql": kql, "purpose": "p"})],
+             "tool_use", "", Usage()),
+        Turn("done", [], "end", "", Usage()), Turn("done", [], "end", "", Usage())]}, spend)
+    inv = InvestigationAgent(replay, provider).run(alert["id"])
+    assert inv.status == "inconclusive: the model ended without submit_verdict"
+    ev = inv.evidence[1]
+    assert ev.rows and all(r["InitiatingProcessFileName"] == "powershell.exe" for r in ev.rows)
+    assert any("not Defender telemetry" in p for p in ev.provenance)

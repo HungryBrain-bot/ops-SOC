@@ -10,7 +10,8 @@ and tested here, on recorded OTRF data in the Kusto emulator.
 
 Architecture: docs/decisions/001-architecture.md (ADR 001). SOAR writer:
 docs/decisions/002-soar-writer.md (ADR 002). Connectors and replay:
-docs/decisions/003-connectors-and-replay.md (ADR 003).
+docs/decisions/003-connectors-and-replay.md (ADR 003). Replay alerts: ADR 004.
+LLM layer: ADR 005. Investigation agent: ADR 006.
 
 Before adding an agent, connector, data source or write path beyond Scope,
 check the request is explicit from the owner (Venu).
@@ -47,6 +48,9 @@ Per task, not per agent (ADR 001): `reasoning` (hypotheses, evidence
 judgment, verdict) on Claude Opus or the OpenAI top tier; `extraction` and
 `writing` (log summaries, reports, SOAR notes, docs) on Sonnet or below.
 LLM spend cap USD 100 per month (default, in settings).
+Code: `opssoc/llm/settings.py` (Anthropic defaults Opus 5.5 / Sonnet 5.5;
+OpenAI model IDs from environment only). Ledger `data/llm/spend.jsonl`.
+Read the `claude-api` skill before changing Anthropic calls.
 
 ## Testing
 
@@ -65,14 +69,21 @@ server for each target.
   selection (offline, rows copied from detection_As_Code's results).
 - `tests/test_sysmon_mapping.py` - Sysmon -> Defender mapping on a recorded
   OTRF extract; every column in the vendor schema.
+- `tests/test_llm.py` - tiers, prices, spend cap, and the Anthropic /
+  OpenAI requests built against fake SDK clients.
+- `tests/test_investigation.py` - investigation loop with a scripted
+  provider (test-only, not model output): tools, fencing, read-only refusal,
+  verdict checks, budgets, case report.
 - `tests/test_replay_engine.py` - replay in the real Kusto emulator, incl.
-  the 7 seeded alerts; skipped unless OPSSOC_KUSTO_URL is set (CI job
+  the 7 seeded alerts and the agent's query tool; skipped unless OPSSOC_KUSTO_URL is set (CI job
   `replay-kusto`, which checks out detection_As_Code at the pinned commit).
 
-Last run (2026-11-24, replay alerts): 49 passed, 5 skipped (engine tests,
-run in CI); ruff clean.
+Last run (2026-11-24, investigation agent): 73 passed, 6 skipped (engine
+tests, run in CI); ruff clean.
 
-Skills (`.claude/skills/`): `build-and-document`, `replay-data`.
+Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
+`investigation-agent`, `llm-providers`. Agent definitions (prompt + budgets):
+`opssoc/agents/<agent>/agent.md`.
 
 ## Current status
 
@@ -94,7 +105,14 @@ Skills (`.claude/skills/`): `build-and-document`, `replay-data`.
   investigation ID; Defender's registry hive format.
 - Not verified: Graph `categories` value format (seeded alerts use CamelCase
   tactics).
-- Next: investigation agent; eval harness; threat intel agent.
+- Built: LLM layer (ADR 005, docs/components/llm-client.md): Anthropic and
+  OpenAI via official SDKs (`[llm]` extra), per-task tiers, monthly cap.
+- Built: investigation agent (ADR 006, docs/components/investigation-agent.md):
+  evidence records, fenced tool output, cited verdict with checks, budgets,
+  case report to the SOAR writer (dry-run / test).
+- Not verified: any live LLM call (no keys; owner asked not to spend yet);
+  how well a real model investigates; OpenAI request shape against the API.
+- Next: eval harness; threat intel agent.
 - Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
   fields (unverified).
 

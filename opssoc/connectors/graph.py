@@ -6,7 +6,8 @@ From the Graph v1.0 reference (fetched 2026-11-24):
   ``{"Query": kql, "Timespan": iso8601}`` (Timespan optional, default 30 days).
   Response: ``{"schema": [{"name", "type"}], "results": [{...}]}``.
   Permission: ThreatHunting.Read.All (application).
-- ``GET .../security/alerts_v2`` and ``GET .../security/incidents/{id}``
+- ``GET .../security/alerts_v2``, ``GET .../security/alerts_v2/{id}`` and
+  ``GET .../security/incidents/{id}``
   (``$expand=alerts``). Sentinel alerts and incidents appear here once the
   workspace is onboarded to the Defender portal.
 
@@ -76,6 +77,10 @@ class GraphSecurityConnector(SecurityConnector):
         query = urlencode({"$top": top, "$orderby": "createdDateTime desc"})
         return Request("GET", f"{GRAPH}/security/alerts_v2?{query}", self._auth(PREFER))
 
+    def alert_request(self, alert_id: str) -> Request:
+        return Request("GET", f"{GRAPH}/security/alerts_v2/{quote(alert_id, safe='')}",
+                       self._auth(PREFER))
+
     def incident_request(self, incident_id: str) -> Request:
         return Request("GET", f"{GRAPH}/security/incidents/{quote(incident_id, safe='')}"
                               "?$expand=alerts", self._auth(PREFER))
@@ -92,6 +97,9 @@ class GraphSecurityConnector(SecurityConnector):
 
     def list_alerts(self, top: int = 50) -> list[dict]:
         return self._send(self.alerts_request(top)).get("value", [])
+
+    def get_alert(self, alert_id: str) -> dict:
+        return self._send(self.alert_request(alert_id))
 
     def get_incident(self, incident_id: str) -> dict:
         return self._send(self.incident_request(incident_id))
