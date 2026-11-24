@@ -5,8 +5,10 @@
     load [--kusto-url]    create the Device* tables (and SecurityEvent / Event when a
                           detection_As_Code checkout is set in OPSSOC_DAC_PATH) in the Kusto
                           emulator and ingest every dataset
-    seed [--kusto-url]    run the detection_As_Code rules over each dataset, write
-                          data/replay/alerts.json, then load all datasets (ADR 004)
+    seed [--kusto-url] [--eval-rules]
+                          run the detection_As_Code rules (and with --eval-rules the eval
+                          rules, ADR 007) over each dataset, write data/replay/alerts.json,
+                          then load all datasets (ADR 004)
 """
 
 from __future__ import annotations
@@ -105,15 +107,23 @@ def main(argv: list[str] | None = None) -> int:
     se = sub.add_parser("seed")
     se.add_argument("--kusto-url")
     se.add_argument("--out", default="data/replay/alerts.json")
+    se.add_argument("--eval-rules", action="store_true",
+                    help="also run the eval rules in opssoc/eval/rules.json (ADR 007)")
     args = parser.parse_args(argv)
 
     if args.command == "fetch":
         fetch(args.only)
         return 0
     if args.command == "seed":
-        from opssoc.replay.seed import seed  # noqa: PLC0415
+        from opssoc.replay.seed import PROBE_KIND, seed
 
-        print(json.dumps(seed(KustoClient(args.kusto_url), Path(args.out)), indent=2))
+        extra = []
+        if args.eval_rules:
+            from opssoc.eval.cases import load_eval_rules
+
+            extra = [(rule, PROBE_KIND) for rule in load_eval_rules()]
+        print(json.dumps(seed(KustoClient(args.kusto_url), Path(args.out), extra_rules=extra),
+                         indent=2))
         return 0
     with_sentinel = args.command == "load" and dac_bridge.available()
     rows, report = mapped(with_sentinel)

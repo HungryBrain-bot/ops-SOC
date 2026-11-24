@@ -11,7 +11,7 @@ and tested here, on recorded OTRF data in the Kusto emulator.
 Architecture: docs/decisions/001-architecture.md (ADR 001). SOAR writer:
 docs/decisions/002-soar-writer.md (ADR 002). Connectors and replay:
 docs/decisions/003-connectors-and-replay.md (ADR 003). Replay alerts: ADR 004.
-LLM layer: ADR 005. Investigation agent: ADR 006.
+LLM layer: ADR 005. Investigation agent: ADR 006. Eval harness: ADR 007.
 
 Before adding an agent, connector, data source or write path beyond Scope,
 check the request is explicit from the owner (Venu).
@@ -74,15 +74,18 @@ server for each target.
 - `tests/test_investigation.py` - investigation loop with a scripted
   provider (test-only, not model output): tools, fencing, read-only refusal,
   verdict checks, budgets, case report.
+- `tests/test_eval.py` - ground truth integrity, case matching, scoring
+  (records written in the test, not model output).
 - `tests/test_replay_engine.py` - replay in the real Kusto emulator, incl.
-  the 7 seeded alerts and the agent's query tool; skipped unless OPSSOC_KUSTO_URL is set (CI job
+  the 7 DaC alerts, the 5 eval-rule alerts, full ground-truth coverage, key
+  facts in the data, and the agent's query tool; skipped unless OPSSOC_KUSTO_URL is set (CI job
   `replay-kusto`, which checks out detection_As_Code at the pinned commit).
 
-Last run (2026-11-24, investigation agent): 73 passed, 6 skipped (engine
-tests, run in CI); ruff clean.
+Last run (2026-11-24, eval harness): 82 passed, 8 skipped (engine tests,
+run in CI); ruff clean.
 
 Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
-`investigation-agent`, `llm-providers`. Agent definitions (prompt + budgets):
+`investigation-agent`, `llm-providers`, `eval-harness`. Agent definitions (prompt + budgets):
 `opssoc/agents/<agent>/agent.md`.
 
 ## Current status
@@ -112,7 +115,12 @@ Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
   case report to the SOAR writer (dry-run / test).
 - Not verified: any live LLM call (no keys; owner asked not to spend yet);
   how well a real model investigates; OpenAI request shape against the API.
-- Next: eval harness; threat intel agent.
+- Built: eval harness (ADR 007, docs/components/eval-harness.md): 12 cases
+  on seeded replay alerts (10 true positive labelled from OTRF metadata, 2
+  benign labelled by this project from recorded parent chains), eval rules
+  (loosened DaC rules, never deployed), deterministic scoring, `run` needs
+  `--yes` to spend. Not run with a real model yet.
+- Next: threat intel agent.
 - Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
   fields (unverified).
 

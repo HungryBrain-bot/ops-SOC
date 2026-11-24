@@ -55,12 +55,13 @@ def test_seeded_alerts_match_dac_results(replay):
     """The four endpoint rules give the same matches on the six datasets as DaC's committed
     Kusto results (A1 2, A2 2, A3 2, A4 1), now as alerts with one dataset each."""
     alerts = json.loads(ALERTS.read_text())["alerts"]
-    by_rule = Counter(a["additionalData"]["dacRule"][:8] for a in alerts)
+    dac = [a for a in alerts if "dacRule" in a["additionalData"]]
+    by_rule = Counter(a["additionalData"]["dacRule"][:8] for a in dac)
     assert by_rule == {"e07878fc": 2, "cbbad913": 2, "20cda3e9": 2, "00e5982f": 1}
-    assert len({a["id"] for a in alerts}) == 7
+    assert len({a["id"] for a in dac}) == 7
     assert all(a["classification"] == "unknown" for a in alerts)
-    listed = replay.list_alerts()
-    assert len(listed) == 7
+    listed = replay.list_alerts(top=100)
+    assert len(listed) == len(alerts)
     incident = replay.get_incident(listed[0]["incidentId"])
     assert listed[0] in incident["alerts"]
 
@@ -94,3 +95,33 @@ def test_investigation_tools_on_the_emulator(replay, tmp_path):
     ev = inv.evidence[1]
     assert ev.rows and all(r["InitiatingProcessFileName"] == "powershell.exe" for r in ev.rows)
     assert any("not Defender telemetry" in p for p in ev.provenance)
+
+
+@pytest.mark.skipif(not ALERTS.is_file(), reason="run `python -m opssoc.replay seed --eval-rules`")
+def test_eval_rules_and_ground_truth_cover_every_alert():
+    """CI seeds with --eval-rules: e1 matches the SAM save and the grouped Network Watcher
+    exports, e2 the two Updater values and Defender's own Run value. Every alert is
+    labelled by exactly one ground-truth case."""
+    from opssoc.eval.cases import load_cases, match
+
+    alerts = json.loads(ALERTS.read_text())["alerts"]
+    by_eval = Counter(a["additionalData"].get("evalRule") for a in alerts
+                      if "evalRule" in a["additionalData"])
+    assert by_eval == {"ops-eval-e1": 2, "ops-eval-e2": 3}
+    m = match(load_cases(), alerts)
+    assert m.problems == [] and m.unlabelled == []
+    assert len(m.pairs) == 12
+
+
+def test_key_facts_are_in_the_recorded_data():
+    """Every key fact a case expects is a string from that dataset's recorded events."""
+    from opssoc.eval.cases import load_cases
+    from opssoc.replay.__main__ import dataset_events
+
+    text = {}
+    for case in load_cases():
+        if case.dataset not in text:
+            raw = json.dumps(dataset_events(case.dataset))
+            text[case.dataset] = raw.replace("\\\\", "\\").lower()
+        missing = [f for f in case.key_facts if f.lower() not in text[case.dataset]]
+        assert not missing, (case.id, missing)

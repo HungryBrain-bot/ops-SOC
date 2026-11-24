@@ -1,0 +1,268 @@
+{
+  "_about": "Ground truth for the eval harness (ADR 007). The agent never reads this file. Each case names the replay alert it labels (rule, dataset, row substrings) and the verdict a correct investigation reaches. Labels come from the OTRF dataset metadata (sources below, read at the pinned OTRF commit with git on 2026-11-24) or are this project's judgment, marked ops-soc-judgment with the recorded evidence behind them. key_facts are strings taken from the recorded events that a correct report states.",
+  "otrf_commit": "d9d40ef123d2c87d5d3df28c96bcab4f0faccc87",
+  "fetched": "2026-11-24",
+  "sources": {
+    "SDWIN-190518182022": {
+      "dataset": "otrf-empire-launcher-vbs",
+      "file": "datasets/atomic/_metadata/SDWIN-190518182022.yaml",
+      "sha256": "04f5d168d72ccf00cec9489e3d5951e9b87e893bf88af1f8e8553b5f926dede1",
+      "title": "Empire VBS Execution",
+      "description": "This dataset represents adversaries executing a VBS script as a launcher for initial access.",
+      "attack_techniques": [
+        "T1059.005"
+      ]
+    },
+    "SDWIN-190319023812": {
+      "dataset": "otrf-empire-runkey-standard-user",
+      "file": "datasets/atomic/_metadata/SDWIN-190319023812.yaml",
+      "sha256": "3e6ccb71dff81e4a0c267d58ab9ab989634fdd9a2ca86a4c18c8a6c422f5c9ae",
+      "title": "Empire Userland Registry Run Keys",
+      "description": "This dataset represents adversaries modifying local Run registry keys (i.e. HKLM:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run) for persistence. It also captures the execution of the persistence mechanism.",
+      "attack_techniques": [
+        "T1547.001"
+      ]
+    },
+    "SDWIN-200722001847": {
+      "dataset": "otrf-empire-runkey-elevated-user",
+      "file": "datasets/atomic/_metadata/SDWIN-200722001847.yaml",
+      "sha256": "4b7e943648d1217cf30c562de069651fc24303bdebddff165a4f2ccba11d92a7",
+      "title": "Empire Elevated Registry Run Keys",
+      "description": "This dataset represents adversaries modifying local Run registry keys (i.e. HKLM:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run) for persistence. It also captures the execution of the persistence mechanism.",
+      "attack_techniques": [
+        "T1547.001"
+      ]
+    },
+    "SDWIN-190625133822": {
+      "dataset": "otrf-empire-reg-dump-sam",
+      "file": "datasets/atomic/_metadata/SDWIN-190625133822.yaml",
+      "sha256": "52a37214effd8c48ed374166bcd00f1e723edaea727638da792953771ad7cff3",
+      "title": "Empire Reg Dump SAM Hive",
+      "description": "This dataset represents adversaries with administrator privileges using the windows reg utility to dump the SAM registry hive.",
+      "attack_techniques": [
+        "T1003.002"
+      ]
+    },
+    "SDWIN-201023023651": {
+      "dataset": "otrf-bitsadmin-download",
+      "file": "datasets/atomic/_metadata/SDWIN-201023023651.yaml",
+      "sha256": "dfbd2247bd2b898be68e07415e52fab53741b0d1b8e7f9959c55cc91a5e6fa41",
+      "title": "Bitsadmin Download Malicious File",
+      "description": "This dataset represents threat actors leveraging bitsadmin.exe to download a file.",
+      "attack_techniques": [
+        "T1197"
+      ]
+    },
+    "SDWIN-201019002900": {
+      "dataset": "otrf-sam-copy-esentutl",
+      "file": "datasets/atomic/_metadata/SDWIN-201019002900.yaml",
+      "sha256": "04f4085fe5b12238e9fdee68f54b310950596339aeef068156ed9aadfbfc11d2",
+      "title": "SAM Copy via Esentutl VSS",
+      "description": "This dataset represents adversaries copying the SAM hive using the esentutl.exe utility and volume shadow copy services.",
+      "attack_techniques": [
+        "T1003.002"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "tp-a1-vbs-launcher",
+      "rule": "e07878fc-1056-45fc-91bf-0fffe5a4ce10",
+      "dataset": "otrf-empire-launcher-vbs",
+      "row": {},
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-190518182022"
+      },
+      "key_facts": [
+        "wscript.exe",
+        "launcher.vbs",
+        "-enc"
+      ]
+    },
+    {
+      "id": "tp-a1-runkey-execution",
+      "rule": "e07878fc-1056-45fc-91bf-0fffe5a4ce10",
+      "dataset": "otrf-empire-runkey-standard-user",
+      "row": {},
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-190319023812"
+      },
+      "key_facts": [
+        "Updater",
+        "Debug"
+      ]
+    },
+    {
+      "id": "tp-a2-runkey-standard",
+      "rule": "cbbad913-22f2-49cb-ad4c-85b2370acc24",
+      "dataset": "otrf-empire-runkey-standard-user",
+      "row": {},
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-190319023812"
+      },
+      "key_facts": [
+        "Updater",
+        "Debug",
+        "powershell.exe"
+      ]
+    },
+    {
+      "id": "tp-a2-runkey-elevated",
+      "rule": "cbbad913-22f2-49cb-ad4c-85b2370acc24",
+      "dataset": "otrf-empire-runkey-elevated-user",
+      "row": {},
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-200722001847"
+      },
+      "key_facts": [
+        "Updater",
+        "HKLM",
+        "Debug"
+      ]
+    },
+    {
+      "id": "tp-a3-reg-save-sam",
+      "rule": "20cda3e9-edbf-48e5-8994-fe1dbd1d3d18",
+      "dataset": "otrf-empire-reg-dump-sam",
+      "row": {},
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-190625133822"
+      },
+      "key_facts": [
+        "reg.exe",
+        "HKLM\\sam",
+        "powershell.exe"
+      ]
+    },
+    {
+      "id": "tp-a3-esentutl-vss",
+      "rule": "20cda3e9-edbf-48e5-8994-fe1dbd1d3d18",
+      "dataset": "otrf-sam-copy-esentutl",
+      "row": {},
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-201019002900"
+      },
+      "key_facts": [
+        "esentutl",
+        "/vss",
+        "ProgramData\\SAM"
+      ]
+    },
+    {
+      "id": "tp-a4-bitsadmin",
+      "rule": "00e5982f-6fb1-4920-a25e-1c5ddd845015",
+      "dataset": "otrf-bitsadmin-download",
+      "row": {},
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-201023023651"
+      },
+      "key_facts": [
+        "bitsadmin",
+        "raw.githubusercontent.com",
+        "bitsadmin1_flag.ps1"
+      ]
+    },
+    {
+      "id": "tp-e1-reg-save-sam",
+      "rule": "ops-eval-e1",
+      "dataset": "otrf-empire-reg-dump-sam",
+      "row": {
+        "CommandLine": "save"
+      },
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-190625133822"
+      },
+      "key_facts": [
+        "reg.exe",
+        "HKLM\\sam",
+        "powershell.exe"
+      ]
+    },
+    {
+      "id": "tp-e2-runkey-standard",
+      "rule": "ops-eval-e2",
+      "dataset": "otrf-empire-runkey-standard-user",
+      "row": {
+        "TargetObject": "Updater"
+      },
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-190319023812"
+      },
+      "key_facts": [
+        "Updater",
+        "Debug",
+        "powershell.exe"
+      ]
+    },
+    {
+      "id": "tp-e2-runkey-elevated",
+      "rule": "ops-eval-e2",
+      "dataset": "otrf-empire-runkey-elevated-user",
+      "row": {
+        "TargetObject": "Updater"
+      },
+      "expected_verdict": "true_positive",
+      "label": {
+        "kind": "otrf-metadata",
+        "ref": "SDWIN-200722001847"
+      },
+      "key_facts": [
+        "Updater",
+        "HKLM",
+        "Debug"
+      ]
+    },
+    {
+      "id": "bn-e1-network-watcher-diagnostics",
+      "rule": "ops-eval-e1",
+      "dataset": "otrf-empire-runkey-standard-user",
+      "row": {
+        "CommandLine": "export"
+      },
+      "expected_verdict": "benign",
+      "label": {
+        "kind": "ops-soc-judgment",
+        "basis": "Recorded parent chain in this dataset: NetworkWatcherAgent.exe (C:\\Packages\\Plugins\\Microsoft.Azure.NetworkWatcher.NetworkWatcherAgentWindows\\...) runs netsh trace; netsh starts cscript C:\\windows\\system32\\gatherNetworkInfo.vbs as WORKSTATION5$, which runs cmd /c reg export of network, wireless and credential-provider configuration into a config folder. Judged benign Azure VM network diagnostics collection; OTRF metadata describes only the Empire activity in this dataset. The exports run minutes from the Empire persistence activity on the same host, which makes the case harder."
+      },
+      "key_facts": [
+        "gatherNetworkInfo",
+        "NetworkWatcher"
+      ]
+    },
+    {
+      "id": "bn-e2-defender-run-key",
+      "rule": "ops-eval-e2",
+      "dataset": "otrf-empire-runkey-standard-user",
+      "row": {
+        "Image": "MsMpEng.exe"
+      },
+      "expected_verdict": "benign",
+      "label": {
+        "kind": "ops-soc-judgment",
+        "basis": "Recorded Sysmon event 13: C:\\Program Files\\Windows Defender\\MsMpEng.exe set the Run value WindowsDefender. Judged benign: the writer is the Defender engine in its install folder, which detection_As_Code A2 excludes for the same reason. OTRF metadata does not describe this event."
+      },
+      "key_facts": [
+        "MsMpEng.exe",
+        "WindowsDefender"
+      ]
+    }
+  ]
+}
