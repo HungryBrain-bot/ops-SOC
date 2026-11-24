@@ -142,3 +142,22 @@
   events. Not run: the agent against the eval (no LLM spend, owner's
   instruction).
 - Verified locally: 82 passed, 8 skipped; ruff clean.
+
+## 2026-11-24 - Threat intel agent (finance)
+
+- Built `opssoc/intel/` and `opssoc/agents/threat_intel/` (ADR 008).
+- Snapshots pinned by commit and SHA-256: ATT&CK Enterprise v20.1
+  (attack-stix-data a8db2f5; 178 active groups, 706 active techniques) and
+  KEV 2026.11.23 (kev-data 6192ecd; 1,792 entries). Not committed.
+- Finance profile: 25 groups (7 primary, 18 listed) chosen by reading every
+  active group description that mentions finance, banks, ATMs, SWIFT or
+  payments; 6 borderline groups excluded with reasons (AppleJeus, admin@338,
+  FIN4, FIN5, FIN6, Lazarus Group). Each sentence checked verbatim against the
+  bundle. Status proposed: needs the owner's review.
+- Result: 269 techniques; top five T1588.002, T1059.001, T1566.001,
+  T1204.002, T1105; 21 of the top 25 have no DaC rule (T1588.002 reported
+  apart as pre-compromise); 30 CVEs named by ATT&CK for the groups, 27 in
+  KEV, 14 with known ransomware use.
+- Brief: writing-tier model text from the computed data, IDs checked; not
+  run (no LLM spend).
+- Verified locally: 97 passed, 8 skipped; ruff clean.

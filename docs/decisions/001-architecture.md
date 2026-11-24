@@ -155,3 +155,8 @@ flowchart TB
 Point 6: structured output is a strict tool call validated by the agent, not a Pydantic
 schema, so the runtime stays stdlib-only (ADR 005). Point 2: replay alerts are written in
 the Graph shape only (ADR 004).
+
+## Amendment (2026-11-24, threat intel)
+Point 4: the finance profile is `intel/finance_profile.json` (JSON, not YAML), and the
+threat intel agent's priorities and gaps are computed deterministically; the LLM writes
+only an optional brief from them (ADR 008).

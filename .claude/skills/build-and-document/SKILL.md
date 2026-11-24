@@ -34,6 +34,7 @@ why this method over the alternatives, and what it does not do.
 - Investigation agent prompt, tools, checks: `investigation-agent`.
 - Models, tiers, prices, spend cap, providers: `llm-providers`.
 - Ground truth, eval rules, scoring an agent change: `eval-harness`.
+- Finance profile, ATT&CK / KEV snapshots, coverage gaps: `threat-intel`.
 
 ## Do NOT
 - Don't add agents, connectors, data sources or write paths beyond CLAUDE.md's Scope without

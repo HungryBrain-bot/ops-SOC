@@ -12,3 +12,4 @@ data/datasets/
 data/replay/*
 !data/replay/.gitkeep
 data/llm/
+data/intel/

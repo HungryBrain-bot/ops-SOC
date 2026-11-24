@@ -1,0 +1,21 @@
+{
+  "_about": "Pinned threat-intel snapshots (ADR 008). Downloaded on demand into data/intel/ and verified by SHA-256; never committed. Pins checked 2026-11-24.",
+  "snapshots": {
+    "attack-enterprise": {
+      "url": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/a8db2f52eb933c9c99060c123e088b3326d3a607/enterprise-attack/enterprise-attack-20.1.json",
+      "repo": "mitre-attack/attack-stix-data",
+      "commit": "a8db2f52eb933c9c99060c123e088b3326d3a607",
+      "version": "ATT&CK Enterprise v20.1",
+      "sha256": "539a843a7b53ed9749740b2123dddae3726b1a4831841c32aca740b011b910b5",
+      "file": "enterprise-attack-20.1.json"
+    },
+    "cisa-kev": {
+      "url": "https://raw.githubusercontent.com/cisagov/kev-data/6192ecdda713e91373a589a5d0e71d9e6b31d872/known_exploited_vulnerabilities.json",
+      "repo": "cisagov/kev-data",
+      "commit": "6192ecdda713e91373a589a5d0e71d9e6b31d872",
+      "version": "KEV catalog 2026.11.23 (1,792 entries)",
+      "sha256": "ac8f0c4e73ec9212dd00afbb9bed2b43abc9cdb3c8719fc2c2606f008171f70a",
+      "file": "known_exploited_vulnerabilities.json"
+    }
+  }
+}
