@@ -53,3 +53,7 @@ replay engine, and how recorded Sysmon data stands in for Defender tables.
   relative window. The result says so in `provenance`.
 - Mapped `Device*` rows approximate Defender (component doc lists every approximation).
   A query that passes on replay can still behave differently on real Defender data.
+
+## Amendment (2026-11-24)
+Point 7: the alert-seeding step is built; see ADR 004. Replay `SecurityEvent` / `Event`
+results are labelled as mapped by detection_As_Code. Replay now holds six OTRF datasets.

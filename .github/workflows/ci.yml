@@ -35,12 +35,21 @@ jobs:
           - 8080:8080
     env:
       OPSSOC_KUSTO_URL: http://localhost:8080
+      OPSSOC_DAC_PATH: ${{ github.workspace }}/.dac
     steps:
       - uses: actions/checkout@v4
+      - name: Check out detection_As_Code at the pinned commit (ADR 004)
+        uses: actions/checkout@v4
+        with:
+          repository: HungryBrain-bot/detection_As_Code
+          ref: 51080aa733242325215be64f75a83926c4ac35ef
+          path: .dac
+      - name: Pinned commit matches the code
+        run: grep -q 'DAC_COMMIT = "51080aa733242325215be64f75a83926c4ac35ef"' opssoc/replay/dac_bridge.py
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,seed]"
       - name: Wait for the emulator
         run: |
           for i in $(seq 1 60); do
@@ -51,7 +60,14 @@ jobs:
           echo "Kusto emulator did not start" >&2; exit 1
       - name: Fetch OTRF datasets (pinned by SHA-256)
         run: python -m opssoc.replay fetch
-      - name: Map and load
-        run: python -m opssoc.replay load
+      - name: Seed alerts (DaC rules per dataset) and load all datasets
+        run: python -m opssoc.replay seed
       - name: Engine tests
         run: python -m pytest -q tests/test_replay_engine.py
+      - name: Keep the seeded alerts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-alerts
+          path: data/replay/alerts.json
+          if-no-files-found: ignore

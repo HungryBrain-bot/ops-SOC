@@ -1,8 +1,12 @@
-"""python -m opssoc.replay fetch | map | load
+"""python -m opssoc.replay fetch | map | load | seed
 
     fetch [--only NAME]   download the pinned OTRF datasets into data/datasets/, verify SHA-256
     map --out DIR         map every fetched dataset to Defender rows (JSONL per table), offline
-    load [--kusto-url]    create the Device* tables in the Kusto emulator and ingest the rows
+    load [--kusto-url]    create the Device* tables (and SecurityEvent / Event when a
+                          detection_As_Code checkout is set in OPSSOC_DAC_PATH) in the Kusto
+                          emulator and ingest every dataset
+    seed [--kusto-url]    run the detection_As_Code rules over each dataset, write
+                          data/replay/alerts.json, then load all datasets (ADR 004)
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from opssoc.replay import dac_bridge
 from opssoc.replay.kusto import KustoClient
 from opssoc.replay.sysmon_to_defender import TABLES, SysmonToDefender, read_events, schema
 
@@ -45,16 +50,47 @@ def fetch(only: str | None = None) -> list[Path]:
     return paths
 
 
-def mapped() -> tuple[dict[str, list[dict]], dict]:
-    rows: dict[str, list[dict]] = {t: [] for t in TABLES}
+def dataset_events(name: str) -> list[dict]:
+    paths = sorted((DATA / name).glob("*.json"))
+    if not paths:
+        raise SystemExit(f"{name}: not fetched; run `python -m opssoc.replay fetch`")
+    return [event for path in paths for event in read_events(path)]
+
+
+def dataset_rows(name: str, with_sentinel: bool) -> tuple[dict[str, list[dict]], dict]:
+    """All replay tables' rows for one dataset, and a count report."""
+    events = dataset_events(name)
+    result = SysmonToDefender().map(events)
+    rows = dict(result.rows)
+    report = {"rows": result.counts(), "skipped_by_defender_mapping": sum(result.skipped.values())}
+    if with_sentinel:
+        sentinel = dac_bridge.sentinel_rows(events)
+        rows.update(sentinel)
+        report["rows"].update({t: len(r) for t, r in sentinel.items()})
+    return rows, report
+
+
+def mapped(with_sentinel: bool = False) -> tuple[dict[str, list[dict]], dict]:
+    rows: dict[str, list[dict]] = {}
     report = {}
     for name in PINS["datasets"]:
-        for path in sorted((DATA / name).glob("*.json")):
-            result = SysmonToDefender().map(read_events(path))
-            for table, items in result.rows.items():
-                rows[table] += items
-            report[name] = {"rows": result.counts(), "skipped": sum(result.skipped.values())}
+        one, report[name] = dataset_rows(name, with_sentinel)
+        for table, items in one.items():
+            rows.setdefault(table, []).extend(items)
     return rows, report
+
+
+def table_schemas(with_sentinel: bool) -> dict[str, dict[str, str]]:
+    schemas = {t: schema(t) for t in TABLES}
+    if with_sentinel:
+        schemas.update({t: dac_bridge.schema(t) for t in dac_bridge.SENTINEL_TABLES})
+    return schemas
+
+
+def load(kusto: KustoClient, rows: dict[str, list[dict]], schemas: dict[str, dict]) -> None:
+    for table, columns in schemas.items():
+        kusto.create_table(table, columns)
+        kusto.ingest(table, rows.get(table, []))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -66,12 +102,21 @@ def main(argv: list[str] | None = None) -> int:
     m.add_argument("--out", default="build/replay")
     lo = sub.add_parser("load")
     lo.add_argument("--kusto-url")
+    se = sub.add_parser("seed")
+    se.add_argument("--kusto-url")
+    se.add_argument("--out", default="data/replay/alerts.json")
     args = parser.parse_args(argv)
 
     if args.command == "fetch":
         fetch(args.only)
         return 0
-    rows, report = mapped()
+    if args.command == "seed":
+        from opssoc.replay.seed import seed  # noqa: PLC0415
+
+        print(json.dumps(seed(KustoClient(args.kusto_url), Path(args.out)), indent=2))
+        return 0
+    with_sentinel = args.command == "load" and dac_bridge.available()
+    rows, report = mapped(with_sentinel)
     if args.command == "map":
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
@@ -80,10 +125,9 @@ def main(argv: list[str] | None = None) -> int:
                 handle.writelines(json.dumps(item) + "\n" for item in items)
     else:
         kusto = KustoClient(args.kusto_url)
-        for table in TABLES:
-            kusto.create_table(table, schema(table))
-            kusto.ingest(table, rows[table])
+        load(kusto, rows, table_schemas(with_sentinel))
         report["engine"] = kusto.version()
+        report["sentinel_tables"] = with_sentinel
     print(json.dumps(report, indent=2))
     return 0
 

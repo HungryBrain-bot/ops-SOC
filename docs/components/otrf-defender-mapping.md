@@ -23,9 +23,16 @@ Pinned datasets and what they produce (`python -m opssoc.replay map`, 2026-11-24
 | Dataset | Process | Network | File | Registry | Skipped |
 |---|---|---|---|---|---|
 | otrf-empire-launcher-vbs | 5 | 10 | 24 | 483 | 1,545 |
+| otrf-empire-runkey-standard-user | 120 | 237 | 210 | 13,206 | 26,796 |
 | otrf-empire-runkey-elevated-user | 0 | 46 | 2 | 32 | 577 |
 | otrf-empire-reg-dump-sam | 1 | 0 | 4 | 0 | 733 |
 | otrf-bitsadmin-download | 2 | 8 | 8 | 70 | 336 |
+| otrf-sam-copy-esentutl | 1 | 0 | 4 | 285 | 625 |
+| **Total** | 129 | 301 | 252 | 14,076 | 30,612 |
+
+The two runkey-standard-user and sam-copy-esentutl datasets were added with alert seeding
+(ADR 004), so replay holds the same six datasets detection_As_Code's endpoint rules were
+tested on.
 
 ## How it works
 

@@ -10,7 +10,7 @@ whether a tenant is connected or not.
 | Method | Graph (live) | Replay |
 |---|---|---|
 | `hunt(kql, timespan)` | `POST /v1.0/security/runHuntingQuery` | KQL in the Kusto emulator over OTRF data |
-| `list_alerts(top)` | `GET /v1.0/security/alerts_v2` | `data/replay/alerts.json` (empty until alert seeding exists) |
+| `list_alerts(top)` | `GET /v1.0/security/alerts_v2` | `data/replay/alerts.json`, written by `python -m opssoc.replay seed` (ADR 004, `replay-alerts.md`) |
 | `get_incident(id)` | `GET /v1.0/security/incidents/{id}?$expand=alerts` | alerts in that file with this `incidentId` |
 
 Every `QueryResult` has `provenance`. Replay results always name the backend; results that
