@@ -55,3 +55,22 @@
   XSOAR or SecOps instance (none exists).
 - Example report `examples/case_report.json` is hand-written and labelled so.
 - Added CI (pytest, ruff, SOAR test push per target). First run is this PR.
+
+## 2026-11-24 - Connectors and replay backend
+
+- Built the read-only connector interface (query guard, row cap, provenance),
+  the Graph security connector (runHuntingQuery, alerts_v2, incidents;
+  client-credentials auth), the replay connector, a Kusto emulator client,
+  and the OTRF Sysmon -> Defender Device* mapping. ADR 003.
+- Checked: Graph runHuntingQuery reference (Query, Timespan default 30 days,
+  ThreatHunting.Read.All, response schema/results); DeviceRegistryEvents
+  columns on Learn (43) and in the Azure-Sentinel table definition (50).
+  Vendored the four Device* table definitions from Azure-Sentinel c0c2dc2
+  with hashes.
+- Recorded data: four OTRF datasets, same pins as detection_As_Code; mapped
+  counts in docs/components/otrf-defender-mapping.md. Test extract of 8
+  recorded events committed (MIT).
+- No Docker daemon in this environment, so the emulator tests run only in
+  CI (job `replay-kusto`, same Kustainer digest as detection_As_Code).
+- Verified locally: 41 tests pass, ruff clean. Not verified: any live Graph
+  call.

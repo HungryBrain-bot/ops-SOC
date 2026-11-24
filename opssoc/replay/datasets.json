@@ -1,0 +1,27 @@
+{
+  "_provenance": "OTRF Security-Datasets (MIT, Copyright (c) 2021 Open Threat Research Forge), pinned by commit and SHA-256. Same pins as detection_As_Code harness/datasets.yaml; each hash re-checked on download.",
+  "base_url": "https://raw.githubusercontent.com/OTRF/Security-Datasets",
+  "commit": "d9d40ef123d2c87d5d3df28c96bcab4f0faccc87",
+  "datasets": {
+    "otrf-empire-launcher-vbs": {
+      "path": "datasets/atomic/windows/execution/host/empire_launcher_vbs.zip",
+      "sha256": "812da270cf8cda6f1948fb6275410f15dc1794d0bd6b623c9c25b2518285019c",
+      "description": "Empire VBS launcher: wscript.exe starts an encoded PowerShell stager."
+    },
+    "otrf-empire-runkey-elevated-user": {
+      "path": "datasets/atomic/windows/persistence/host/empire_persistence_registry_modification_run_keys_elevated_user.zip",
+      "sha256": "2809354d679025859d723be3ceb1e2c9f9e5dde2ebec5bbea7c398e165a9b67d",
+      "description": "Empire agent as an elevated user writes an HKLM Run key."
+    },
+    "otrf-empire-reg-dump-sam": {
+      "path": "datasets/atomic/windows/credential_access/host/empire_shell_reg_dump_sam.zip",
+      "sha256": "5a8ee19860f35da6d4bcadf15178a085b469086c461d3d873d0f4adedba41f0a",
+      "description": "Empire agent shell runs reg.exe save HKLM\\sam."
+    },
+    "otrf-bitsadmin-download": {
+      "path": "datasets/atomic/windows/defense_evasion/host/cmd_bitsadmin_download_psh_script.zip",
+      "sha256": "8fb7bc9f3d82f672dc39a55e50006137aa540c4a9860acdcc5d08a4fd609b594",
+      "description": "cmd.exe runs bitsadmin.exe /transfer to download a file from GitHub."
+    }
+  }
+}
