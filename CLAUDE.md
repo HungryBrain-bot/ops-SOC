@@ -4,12 +4,12 @@
 
 ops-SOC: a SOC platform with three LLM agents (investigation, finance-sector
 threat intelligence, detection engineering) over Microsoft Defender and
-Microsoft Sentinel (Sentinel onboarded to the Defender portal). Successor to
-the `opsmind-hackathon` demo, which was a scripted replay and is not reused
-as a base. No live tenant exists: everything except API credentials is built
+Microsoft Sentinel (Sentinel onboarded to the Defender portal), writing
+results to a SOAR (Cortex XSOAR or Google SecOps SOAR). No live tenant exists: everything except API credentials is built
 and tested here, on recorded OTRF data in the Kusto emulator.
 
-Architecture: docs/decisions/001-architecture.md (ADR 001).
+Architecture: docs/decisions/001-architecture.md (ADR 001). SOAR writer:
+docs/decisions/002-soar-writer.md (ADR 002).
 
 Before adding an agent, connector, data source or write path beyond Scope,
 check the request is explicit from the owner (Venu).
@@ -20,7 +20,7 @@ check the request is explicit from the owner (Venu).
 |------|----------|--------------|
 | Agents | Investigation, threat intel (finance), detection (via detection_As_Code) | Hunting agent |
 | Data connectors | Graph security API (alerts_v2, incidents, runHuntingQuery); Sentinel Log Analytics + ARM incidents as fallback; CISA KEV; MITRE ATT&CK STIX | Any other SIEM / EDR |
-| Writes | One SOAR writer: incident comment / case note, dry-run by default | Response actions (isolate, disable, close, reassign) |
+| Writes | One SOAR writer (Cortex XSOAR incident + entry; Google SecOps SOAR case comment), dry-run by default, test mode against a local stub server | Response actions (isolate, disable, close, reassign) |
 | LLMs | Anthropic Claude and OpenAI behind one client | Self-hosted models |
 | Test data | OTRF Security-Datasets (pinned), alerts seeded by DaC rules, OTRF Sysmon mapped to Defender `Device*` tables (labelled as this project's mapping) | Data without a reuse licence |
 
@@ -53,14 +53,14 @@ LLM spend cap USD 100 per month (default, in settings).
 
 ## Current status
 
-- Built: nothing yet. ADR 001 proposed.
-- Open: SOAR target (proposed: Graph incident comments); USD 100 cap period
-  (assumed monthly); CISA sources beyond KEV.
+- Built: nothing yet. ADRs 001-002 accepted.
+- Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
+  fields (unverified).
 
 ## Do NOT
 
 - Don't add response actions or any write besides the SOAR writer.
-- Don't reintroduce request-selected scenarios, pre-tagged evidence or canned
-  verdicts (the opsmind-hackathon failure modes).
+- Don't let a request select the outcome, pre-label evidence, or return
+  canned verdicts.
 - Don't add real API keys, tenant names or customer data.
 - Don't describe replay runs as running against a real tenant.

@@ -26,3 +26,20 @@
   commit.
 - Next: owner approves ADR 001 and picks the SOAR target; then the connector
   interface and replay backend.
+
+## 2026-11-24 - ADR cleanup and SOAR writer decision
+
+- ADR 001 rewritten to hold design decisions only (no project history or
+  discussion), and marked Accepted after the owner merged PR #1. Rewritten
+  rather than amended because it had been accepted for less than an hour and
+  nothing builds on its wording yet.
+- SOAR targets set by the owner: Cortex XSOAR and Google SecOps SOAR ("GSOAR"
+  read as Google SecOps SOAR). No SOAR instance exists, so the writer gets a
+  test mode that pushes over HTTP to a local stub server (ADR 002).
+- Checked: XSOAR 8 incident and entry APIs (Cortex docs, fetched). Google
+  SecOps v1 cases have no create method; `caseComments.create` exists but its
+  page body did not render through the fetch tool, so its request line and
+  fields are unverified. docs.cloud.google.com is blocked for direct curl
+  from this environment.
+- Next: SOAR writer code with stub server and tests; then the connector
+  interface and replay backend.
