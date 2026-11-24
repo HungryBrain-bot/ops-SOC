@@ -1,0 +1,24 @@
+{
+  "_note": "Hand-written example for the SOAR writer. Not an investigation result and not recorded data.",
+  "case_id": "CASE-EXAMPLE-0001",
+  "title": "Encoded PowerShell download cradle on WORKSTATION5",
+  "verdict": "true_positive",
+  "severity": "high",
+  "summary": "A PowerShell process with an encoded command downloaded and ran a script. Parent was an Office process. No benign explanation was found in the evidence below.",
+  "source_alert_id": "example-alert-0001",
+  "secops_case_id": "4242",
+  "mitre_techniques": ["T1059.001"],
+  "evidence": [
+    {
+      "id": "EV-1",
+      "source": "replay:DeviceProcessEvents",
+      "finding": "powershell.exe -enc ... started by winword.exe",
+      "query": "DeviceProcessEvents | where FileName =~ 'powershell.exe' and ProcessCommandLine has '-enc'",
+      "provenance": "hand-written"
+    }
+  ],
+  "recommended_actions": [
+    "Confirm with the user whether the document was expected.",
+    "Collect the downloaded script for analysis."
+  ]
+}

@@ -49,11 +49,24 @@ LLM spend cap USD 100 per month (default, in settings).
 
 ## Testing
 
-`python -m pytest` and `ruff check` before every commit (none yet).
+`python -m pytest` and `ruff check .` before every commit. CI
+(`.github/workflows/ci.yml`) runs both plus a SOAR test push to the stub
+server for each target.
+
+- `tests/test_soar.py` - SOAR writer: dry-run output, test push over HTTP to
+  the stub (XSOAR and SecOps, incl. pre-processing block, closed
+  investigation, unknown case), live-mode credential check and ledger.
+
+Last run (2026-11-24): 17 passed; ruff clean.
 
 ## Current status
 
-- Built: nothing yet. ADRs 001-002 accepted.
+- Built: SOAR writer for Cortex XSOAR and Google SecOps SOAR with
+  dry-run, test (local stub server) and live modes
+  (docs/components/soar-writer.md). ADRs 001-002 accepted.
+- Verified: the writer's requests pass the stub server over HTTP. Not
+  verified: any live SOAR call; SecOps `caseComments.create` URL and body
+  field; XSOAR incident ID = investigation ID.
 - Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
   fields (unverified).
 
