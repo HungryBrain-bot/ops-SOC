@@ -54,4 +54,8 @@ detection logic.
 - Graph's documented value set for `categories` was not found on the alert page (fetched
   2026-11-24); seeded alerts use CamelCase tactic names (`CredentialAccess`), an
   assumption.
+- ADR 001 point 2 also planned Sentinel-shaped `SecurityAlert` / `SecurityIncident` rows in
+  the emulator. They are not written: the agents read alerts only through `list_alerts` /
+  `get_incident`, which use the Graph shape for both products. Add the rows if an agent
+  ever hunts over `SecurityAlert`.
 - Bumping DaC changes the alerts; bump `DAC_COMMIT` and the CI pin together.
