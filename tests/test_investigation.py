@@ -581,3 +581,67 @@ def test_insufficient_telemetry_rules():
     # A high-weight gap with nothing malicious is insufficient_telemetry, not inconclusive.
     problems = check_verdict(dict(_insufficient(), verdict="inconclusive"), ev)
     assert any("not inconclusive" in p for p in problems)
+
+
+# -- full analyst report (ADR 009 step 3) ----------------------------------------------
+
+def test_case_report_carries_the_full_investigation(tmp_path):
+    from dataclasses import asdict
+
+    from opssoc.case import CaseReport
+    from opssoc.soar.render import route_fields, to_markdown
+    from opssoc.soar.xsoar import XsoarWriter
+
+    a, _ = agent({Tier.REASONING: [
+        turn(call("run_hunting_query", kql="DeviceProcessEvents | take 1", purpose="parent")),
+        turn(call("run_hunting_query", 2, kql="DeviceFileEvents | take 1", purpose="files")),
+        turn(call("submit_verdict", 3, **verdict())),
+    ], Tier.WRITING: [turn(text="True positive.")]}, tmp_path)
+    inv = a.run(ALERT["id"])
+    report = to_case_report(inv, ALERT, "build/investigations/x.investigation.json")
+    d = report.detail
+    assert d["status"] == "verdict" and d["confidence"] == "high"
+    assert [f["id"] for f in d["factors"]] == FACTOR_IDS
+    assert d["factors"][1]["reason"] == "F2 test answer"
+    assert {r["table"] for r in d["coverage"]} >= {"DeviceProcessEvents", "SecurityEvent"}
+    index = {e["id"]: e for e in d["evidence_index"]}
+    assert index["EV-2"]["cited"] and not index["EV-3"]["cited"]
+    assert index["EV-1"]["kind"] == "coverage" and index["EV-1"]["data"] == "computed"
+    assert d["run"]["queries"] == 2 and d["record"].endswith(".investigation.json")
+
+    md = to_markdown(report)
+    for heading in ("### Factors (endpoint-process v2)", "### Telemetry coverage",
+                    "### Hypotheses", "### Timeline", "### Findings and the evidence they cite",
+                    "### All evidence records", "### Not checked", "### Run"):
+        assert heading in md, heading
+    assert md.index("### Factors") < md.index("### Telemetry coverage") < md.index("### Run")
+    assert "EV-3 (not cited):" in md and "DeviceFileEvents | take 1" in md
+    assert "**Confidence:** high" in md
+    assert route_fields(report) == {"confidence": "high", "agent-status": "verdict"}
+    labels = XsoarWriter(env={}).incident_body(report)["labels"]
+    assert {"type": "ops-soc-confidence", "value": "high"} in labels
+
+    # Round trip through the JSON file the SOAR CLI reads.
+    path = tmp_path / "r.json"
+    path.write_text(json.dumps(asdict(report), default=str))
+    assert to_markdown(CaseReport.load(path)) == md
+
+
+def test_stopped_investigation_still_shows_its_evidence(tmp_path):
+    from opssoc.soar.render import route_fields, to_markdown
+
+    bad = verdict(findings=[{"statement": "y", "evidence_ids": ["EV-9"]}])
+    q = [turn(call("run_hunting_query", 1, kql="DeviceFileEvents | take 1", purpose="p")),
+         turn(call("submit_verdict", 2, **bad))]
+    q += [turn(call("run_hunting_query", n, kql=f"DeviceFileEvents | take {n}", purpose="p"))
+          for n in range(3, 9)]
+    a, _ = agent({Tier.REASONING: q}, tmp_path, max_llm_turns=4)
+    inv = a.run(ALERT["id"])
+    report = to_case_report(inv, ALERT)
+    assert report.verdict is Verdict.INCONCLUSIVE and report.evidence == []
+    md = to_markdown(report)
+    assert "**Agent status:** inconclusive: stopped: budget" in md
+    assert "Last verdict the checks rejected (true_positive):" in md
+    assert "unknown evidence ['EV-9']" in md
+    assert "### Telemetry coverage" in md and "EV-2 (not cited):" in md
+    assert route_fields(report) == {"confidence": "none", "agent-status": "stopped"}

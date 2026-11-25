@@ -259,3 +259,15 @@
   review pending.
 - Tests: 114 passed, 13 skipped; engine tests 9 passed locally in the emulator; ruff clean.
   The agent turns are scripted; no real model was run.
+
+## 2026-11-25 - ADR 009 step 3: full analyst report
+- Built: `analyst_detail` and `CaseReport.detail`, built by code from the investigation
+  record for every outcome. The SOAR Markdown now lays out the factor table and tally,
+  telemetry coverage, hypotheses, timeline, cited findings, every evidence record and
+  query (uncited ones marked), not-checked items and the run's cost. A budget stop shows
+  the agent status, its evidence and the last rejected verdict's problems, where before it
+  showed only "No verdict". XSOAR labels `ops-soc-confidence` and `ops-soc-agent-status`
+  were added for playbook routing. No direct notifier (owner decision).
+- Reports without `detail` (`examples/case_report.json`) render as before.
+- Tests: 116 passed, 13 skipped; ruff clean. Turns are scripted. The SOAR entry size
+  limits are not checked or verified.

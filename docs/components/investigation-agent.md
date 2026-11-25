@@ -2,7 +2,7 @@
 
 Code: `opssoc/agents/investigation/` (definition and prompt in `agent.md`, factor checklist
 in `factors.json` and `factors.py`). Decisions: ADR 006, ADR 009 (factors, telemetry, analyst
-loop; steps 1 and 2 built). LLM layer: `llm-client.md`.
+loop; steps 1 to 3 built). LLM layer: `llm-client.md`.
 
 ## What it does
 Takes one alert ID, reads the alert through a read-only connector (Graph live, or replay),
@@ -80,6 +80,15 @@ Checks on a submitted verdict (`check_verdict` = `check_citations` + `check_fact
 After acceptance, `missing_telemetry` lists each factor without telemetry and the gaps its
 coverage records show. It goes into the case report and the SOAR entry ("Missing
 telemetry"), and the XSOAR verdict label carries `insufficient_telemetry`.
+
+Case report (ADR 009 step 3): `to_case_report` keeps the cited evidence in `evidence`. It
+adds `detail` (`analyst_detail`), which code builds from the record for every outcome,
+including budget stops. `detail` holds the status, confidence, factor answers with
+reasons, tally, coverage rows, hypotheses, timeline, findings, an index of every evidence
+record (kind, purpose, query, rows, cited or not, data label), what was not checked, the
+rejected-verdict count with the last rejected verdict's problems, models, turns, queries,
+cost, and the path of the investigation record. The SOAR writer lays it out
+(`soar-writer.md`).
 
 After acceptance, the code computes `factor_tally` (state counts by weight, plus each
 factor's state and citations) and stores it in the investigation record. This is a report

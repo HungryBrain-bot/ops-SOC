@@ -43,10 +43,12 @@ def main(argv: list[str] | None = None) -> int:
 
     alert = connector.get_alert(args.alert)
     inv = InvestigationAgent(connector, get_provider(args.provider)).run(args.alert)
-    report = to_case_report(inv, alert)
     out = Path(args.out)
+    case_id = to_case_report(inv, alert).case_id
+    record_path = out / f"{case_id}.investigation.json"
+    report = to_case_report(inv, alert, str(record_path))
     out.mkdir(parents=True, exist_ok=True)
-    (out / f"{report.case_id}.investigation.json").write_text(
+    record_path.write_text(
         json.dumps(inv.to_json(), indent=2, default=str), encoding="utf-8")
     report_path = out / f"{report.case_id}.case.json"
     report_path.write_text(json.dumps(asdict(report), indent=2, default=str), encoding="utf-8")

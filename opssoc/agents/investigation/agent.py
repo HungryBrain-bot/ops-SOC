@@ -448,9 +448,57 @@ def _label(ev: Evidence) -> str:
     return "recorded"
 
 
-def to_case_report(inv: Investigation, alert: dict) -> CaseReport:
-    """The SOAR writer's input. Only cited evidence goes in; each item says which
-    findings cite it."""
+def _coverage_rows(ev: Evidence) -> list[dict]:
+    keep = ("table", "state", "rows", "rows_before", "rows_from_alert", "last_seen", "detail")
+    return [{k: r.get(k) for k in keep if r.get(k) is not None} for r in ev.rows]
+
+
+def analyst_detail(inv: Investigation, record_path: str | None = None) -> dict:
+    """Everything the analyst needs to review the case, for every outcome (ADR 009 point
+    3): the factor answers, coverage, hypotheses, timeline, findings, every evidence
+    record (cited or not), what was not checked, rejected verdicts and the run's cost.
+    Built from the investigation record only; nothing is model-written here."""
+    v = inv.verdict or {}
+    cited = {i for s in ("findings", "timeline", "hypotheses", "factors")
+             for item in v.get(s) or [] for i in item.get("evidence_ids") or []}
+    reasons = {a.get("factor"): a.get("reason", "") for a in v.get("factors") or []}
+    factors = []
+    for fid, f in ((inv.factor_tally or {}).get("factors") or {}).items():
+        factors.append(dict(f, id=fid, reason=reasons.get(fid, "")))
+    last_rejected = None
+    if inv.rejected_verdicts:
+        last = inv.rejected_verdicts[-1]
+        last_rejected = {"verdict": (last.get("verdict") or {}).get("verdict"),
+                         "problems": list(last.get("problems") or [])}
+    return {
+        "status": inv.status,
+        "confidence": v.get("confidence"),
+        "agent_version": inv.agent_version,
+        "factor_set": inv.factor_set,
+        "factors": factors,
+        "tally": (inv.factor_tally or {}).get("by_state"),
+        "coverage": [row for e in inv.evidence if e.kind == "coverage"
+                     for row in _coverage_rows(e)],
+        "hypotheses": list(v.get("hypotheses") or []),
+        "timeline": list(v.get("timeline") or []),
+        "findings": list(v.get("findings") or []),
+        "evidence_index": [{"id": e.id, "kind": e.kind, "purpose": e.purpose,
+                            "query": e.query, "row_count": len(e.rows),
+                            "truncated": e.truncated, "cited": e.id in cited,
+                            "data": _label(e)} for e in inv.evidence],
+        "not_checked": list(v.get("not_checked") or []),
+        "rejected_verdicts": len(inv.rejected_verdicts),
+        "last_rejected": last_rejected,
+        "run": {"models": list(inv.models), "llm_turns": inv.llm_turns,
+                "queries": inv.queries, "cost_usd": round(inv.usage.cost_usd, 4)},
+        "record": record_path,
+    }
+
+
+def to_case_report(inv: Investigation, alert: dict,
+                   record_path: str | None = None) -> CaseReport:
+    """The SOAR writer's input. `evidence` holds the cited evidence, each item saying
+    which findings cite it; `detail` holds the full investigation (analyst_detail)."""
     v = inv.verdict or {}
     cited: dict[str, list[str]] = {}
     for item in (v.get("findings") or []) + (v.get("timeline") or []):
@@ -483,4 +531,5 @@ def to_case_report(inv: Investigation, alert: dict) -> CaseReport:
         mitre_techniques=list(v.get("mitre_techniques") or alert.get("mitreTechniques") or []),
         missing_telemetry=[f"{m['factor']} {m['name']} ({m['weight']}): " + "; ".join(
             f"{g['table']} {g['state']} [{g['evidence_id']}]" for g in m["gaps"])
-            for m in inv.missing_telemetry])
+            for m in inv.missing_telemetry],
+        detail=analyst_detail(inv, record_path))

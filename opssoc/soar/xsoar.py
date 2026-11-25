@@ -23,7 +23,7 @@ from collections.abc import Mapping
 from opssoc.case import CaseReport, Severity
 from opssoc.http import Request, Response
 from opssoc.soar.base import SoarWriter, Steps, expect
-from opssoc.soar.render import to_markdown
+from opssoc.soar.render import route_fields, to_markdown
 
 # XSOAR severity scale: 0 unknown, 0.5 informational, 1 low, 2 medium, 3 high, 4 critical.
 SEVERITY = {
@@ -58,6 +58,8 @@ class XsoarWriter(SoarWriter):
                 {"type": CASE_LABEL, "value": report.case_id},
                 {"type": "ops-soc-source-alert", "value": report.source_alert_id},
                 {"type": "ops-soc-verdict", "value": report.verdict.value},
+                *[{"type": f"ops-soc-{key}", "value": str(value)}
+                  for key, value in route_fields(report).items()],
             ],
             "createInvestigation": True,
         }
