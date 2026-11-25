@@ -98,3 +98,28 @@
   Kusto results; asserted in tests/test_replay_engine.py (CI only, no Docker here).
 - Added skills `build-and-document` and `replay-data`.
 - Verified locally: 49 passed, 5 skipped; ruff clean.
+
+## 2026-11-24 - LLM layer and investigation agent
+
+- Built `opssoc/llm/` (ADR 005): provider-agnostic conversation interface;
+  Anthropic (Messages API, `anthropic` 2.13.0) and OpenAI (Responses API,
+  `openai` 3.58.0) through the official SDKs as an optional `[llm]` extra;
+  tiers reasoning / extraction / writing; JSONL spend ledger and monthly cap
+  (USD 100); scripted provider for tests only.
+- Anthropic choices from the claude-api skill: adaptive thinking left on,
+  effort per tier, no forced tool_choice, strict tools, server-side refusal
+  fallback (`fallbacks: "default"`). Prices fetched from the Anthropic
+  pricing page (2026-11-24), including fallback models.
+- OpenAI: no default model IDs or prices (none checked against an OpenAI
+  source); both come from the environment.
+- Built `opssoc/agents/investigation/` (ADR 006): definition file with prompt
+  and budgets, four tools (get_alert, get_incident, run_hunting_query,
+  submit_verdict), evidence records with row hashes, fenced tool output,
+  verdict checks (citations exist, timeline times appear in cited rows,
+  decided verdicts have findings), budgets, writing-tier case note, case
+  report for the SOAR writer. Added `get_alert` to the connectors (Graph
+  `GET /security/alerts_v2/{id}`).
+- Not run with a real model: the owner asked not to spend on LLM calls yet.
+  Tests use a scripted provider and fake SDK clients. Engine test runs the
+  agent's query tool against the emulator in CI.
+- Verified locally: 73 passed, 6 skipped; ruff clean.

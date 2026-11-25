@@ -80,6 +80,13 @@ def test_graph_incident_request_escapes_id():
                                          "Prefer": "include-unknown-enum-members"}
 
 
+def test_graph_get_alert():
+    transport = FakeTransport(token(), Response(200, {"id": "da1/2"}))
+    assert GraphSecurityConnector(ENV, transport).get_alert("da1/2") == {"id": "da1/2"}
+    assert transport.sent[1].url == "https://graph.microsoft.com/v1.0/security/alerts_v2/da1%2F2"
+    assert transport.sent[1].headers["Prefer"] == "include-unknown-enum-members"
+
+
 def test_graph_alerts_request_asks_for_unknown_enum_members():
     transport = FakeTransport(token(), Response(200, {"value": [{"id": "a"}]}))
     assert GraphSecurityConnector(ENV, transport).list_alerts(5) == [{"id": "a"}]
@@ -157,6 +164,9 @@ def test_replay_alerts_from_file(tmp_path):
     connector = ReplayConnector(KustoClient(transport=FakeTransport()), path)
     assert [a["id"] for a in connector.list_alerts()] == ["a2", "a1"]
     assert len(connector.get_incident("i1")["alerts"]) == 2
+    assert connector.get_alert("a2")["createdDateTime"] == "2020-09-04T20:11:00Z"
+    with pytest.raises(KeyError):
+        connector.get_alert("nope")
     with pytest.raises(KeyError):
         connector.get_incident("nope")
 

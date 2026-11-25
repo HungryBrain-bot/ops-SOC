@@ -31,6 +31,8 @@ why this method over the alternatives, and what it does not do.
 
 ## Related skills
 - Replay data, seeding alerts, bumping datasets or the DaC pin: `replay-data`.
+- Investigation agent prompt, tools, checks: `investigation-agent`.
+- Models, tiers, prices, spend cap, providers: `llm-providers`.
 
 ## Do NOT
 - Don't add agents, connectors, data sources or write paths beyond CLAUDE.md's Scope without

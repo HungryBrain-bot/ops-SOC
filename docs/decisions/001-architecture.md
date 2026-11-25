@@ -150,3 +150,8 @@ flowchart TB
 
 ## Open questions
 - CISA sources beyond KEV (advisory pages list sectors in prose only). KEV first.
+
+## Amendment (2026-11-24)
+Point 6: structured output is a strict tool call validated by the agent, not a Pydantic
+schema, so the runtime stays stdlib-only (ADR 005). Point 2: replay alerts are written in
+the Graph shape only (ADR 004).

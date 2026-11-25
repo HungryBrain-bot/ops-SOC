@@ -13,6 +13,8 @@ dependencies = []
 dev = ["pytest>=8.0", "ruff>=0.6"]
 # Alert seeding imports detection_As_Code, which needs PyYAML (ADR 004).
 seed = ["PyYAML>=6.0"]
+# LLM providers (ADR 005). Tests use fakes and do not need these.
+llm = ["anthropic>=2.13", "openai>=3.58"]
 
 [tool.setuptools.packages.find]
 include = ["opssoc*"]

@@ -11,3 +11,4 @@ data/datasets/
 *.egg-info/
 data/replay/*
 !data/replay/.gitkeep
+data/llm/

@@ -58,6 +58,12 @@ class ReplayConnector(SecurityConnector):
         alerts = sorted(self._alerts(), key=lambda a: a.get("createdDateTime", ""), reverse=True)
         return alerts[:top]
 
+    def get_alert(self, alert_id: str) -> dict:
+        for alert in self._alerts():
+            if alert.get("id") == alert_id:
+                return alert
+        raise KeyError(f"no replay alert {alert_id}")
+
     def get_incident(self, incident_id: str) -> dict:
         alerts = [a for a in self._alerts() if a.get("incidentId") == incident_id]
         if not alerts:
