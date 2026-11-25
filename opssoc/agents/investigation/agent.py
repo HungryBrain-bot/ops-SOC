@@ -1,10 +1,11 @@
-"""The investigation agent (ADR 001 point 3, ADR 006).
+"""The investigation agent (ADR 001 point 3, ADR 006; factor checklist ADR 009).
 
 Input: an alert ID and a read-only connector. The agent reads the alert, forms
 hypotheses, runs KQL through the connector, and every result becomes an evidence
 record (EV-n) with its query, provenance and a hash of the rows. It ends by submitting
-a verdict whose timeline and findings cite evidence IDs; the citations are checked
-against the evidence records before the verdict is accepted.
+a verdict whose timeline, findings and factor answers cite evidence IDs; the citations,
+the factor answers and the decision rules (factors.py) are checked before the verdict is
+accepted.
 
 The caller never passes an expected outcome, nothing is pre-labelled, and a verdict
 the checks reject is sent back to the model with the reasons. If no valid verdict comes
@@ -20,6 +21,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from opssoc.agents import AgentDefinition, load_definition
+from opssoc.agents.investigation import factors as fx
 from opssoc.case import CaseReport, EvidenceItem, Severity, Verdict
 from opssoc.connectors.base import QueryResult, ReadOnlyViolation, SecurityConnector
 from opssoc.llm.base import (
@@ -65,10 +67,21 @@ TOOLS = [
                   "hypotheses": {"type": "array", "items": {
                       "type": "object",
                       "properties": {"hypothesis": {"type": "string"},
+                                     "explanation": {"type": "string",
+                                                     "enum": list(fx.EXPLANATIONS)},
                                      "status": {"type": "string",
                                                 "enum": ["supported", "refuted", "open"]},
                                      "evidence_ids": _ids},
-                      "required": ["hypothesis", "status", "evidence_ids"],
+                      "required": ["hypothesis", "explanation", "status", "evidence_ids"],
+                      "additionalProperties": False}},
+                  "factors": {"type": "array", "items": {
+                      "type": "object",
+                      "properties": {"factor": {"type": "string",
+                                                "description": "Factor ID, e.g. F1."},
+                                     "state": {"type": "string", "enum": list(fx.STATES)},
+                                     "reason": {"type": "string"},
+                                     "evidence_ids": _ids},
+                      "required": ["factor", "state", "reason", "evidence_ids"],
                       "additionalProperties": False}},
                   "timeline": {"type": "array", "items": {
                       "type": "object",
@@ -87,7 +100,7 @@ TOOLS = [
                   "recommended_actions": {"type": "array", "items": {"type": "string"}},
                   "mitre_techniques": {"type": "array", "items": {"type": "string"}},
               },
-              "required": ["verdict", "confidence", "summary", "hypotheses", "timeline",
+              "required": ["verdict", "confidence", "summary", "hypotheses", "factors", "timeline",
                            "findings", "not_checked", "recommended_actions",
                            "mitre_techniques"],
               "additionalProperties": False}),
@@ -124,6 +137,8 @@ class Investigation:
     usage: Usage = field(default_factory=Usage)
     models: list[str] = field(default_factory=list)
     agent_version: str = ""
+    factor_set: str = ""
+    factor_tally: dict | None = None
 
     def to_json(self) -> dict:
         data = asdict(self)
@@ -160,21 +175,32 @@ def _time_key(value: str) -> str | None:
     return value[:10] + "T" + value[11:16]
 
 
-def check_verdict(verdict: dict, evidence: dict[str, Evidence]) -> list[str]:
-    """Reasons to reject a submitted verdict; empty when accepted. Checks citations exist,
-    every timeline entry and finding cites something, timeline times appear in the cited
-    evidence, and a decided verdict rests on at least one finding."""
+def check_verdict(verdict: dict, evidence: dict[str, Evidence],
+                  factor_set: fx.FactorSet | None = None) -> list[str]:
+    """Reasons to reject a submitted verdict; empty when accepted: the citation checks
+    (`check_citations`), then the factor answers and decision rules of ADR 009
+    (`factors.check_factors`, `factors.check_decision`)."""
+    fset = factor_set or fx.for_alert({})
+    return (check_citations(verdict, evidence) + fx.check_factors(verdict, evidence, fset)
+            + fx.check_decision(verdict, evidence, fset))
+
+
+def check_citations(verdict: dict, evidence: dict[str, Evidence]) -> list[str]:
+    """Checks citations exist, every timeline entry and finding cites something, timeline
+    times appear in the cited evidence, and a decided verdict rests on at least one
+    finding (ADR 006)."""
     problems = []
     if verdict.get("verdict") not in VERDICTS:
         problems.append(f"verdict must be one of {VERDICTS}")
     if verdict.get("confidence") not in CONFIDENCE:
         problems.append(f"confidence must be one of {CONFIDENCE}")
-    sections = [("timeline", "event"), ("findings", "statement"), ("hypotheses", "hypothesis")]
+    sections = [("timeline", "event"), ("findings", "statement"), ("hypotheses", "hypothesis"),
+                ("factors", "factor")]
     for section, label in sections:
         for n, item in enumerate(verdict.get(section) or []):
             ids = item.get("evidence_ids") or []
             name = f"{section}[{n}] ({str(item.get(label, ''))[:60]!r})"
-            if not ids and section != "hypotheses":
+            if not ids and section not in ("hypotheses", "factors"):
                 problems.append(f"{name} cites no evidence")
             unknown = [i for i in ids if i not in evidence]
             if unknown:
@@ -272,12 +298,14 @@ class InvestigationAgent:
             inv.status = f"inconclusive: alert not found ({exc})"
             return inv
         first = self._record(inv, "alert", None, "the alert under investigation", obj=alert)
+        fset = fx.for_alert(alert)
+        inv.factor_set = fset.label
         tier = Tier(self.definition.settings.get("tier_investigate", "reasoning"))
         conv = self.provider.conversation(tier, self.definition.prompt, TOOLS,
                                           purpose=f"investigate {alert_id}")
         inv.models.append(conv.model)
-        opening = (f"Investigate alert {alert_id}. The alert is evidence {first.id}:\n"
-                   f"{self._show(first)}")
+        opening = (f"Investigate alert {alert_id}.\n\n{fset.render()}\n\n"
+                   f"The alert is evidence {first.id}:\n{self._show(first)}")
         try:
             turn = self._turn(inv, lambda: conv.send(opening))
             nudged = False
@@ -290,10 +318,12 @@ class InvestigationAgent:
                         continue
                     results.append(self._tool(inv, call))
                 for call in verdict_calls:
-                    problems = check_verdict(call.arguments, {e.id: e for e in inv.evidence})
+                    problems = check_verdict(call.arguments, {e.id: e for e in inv.evidence},
+                                             fset)
                     if not problems:
                         inv.verdict = call.arguments
                         inv.status = "verdict"
+                        inv.factor_tally = fx.tally(call.arguments, fset)
                         break
                     inv.rejected_verdicts.append({"verdict": call.arguments,
                                                   "problems": problems})

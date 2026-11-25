@@ -30,5 +30,5 @@ target-version = "py311"
 select = ["E", "F", "I", "B", "UP"]
 
 [tool.setuptools.package-data]
-opssoc = ["replay/schemas/*.json", "replay/datasets.json", "agents/*/agent.md",
+opssoc = ["replay/schemas/*.json", "replay/datasets.json", "agents/*/agent.md", "agents/investigation/factors.json",
           "eval/*.json", "intel/snapshots.json"]

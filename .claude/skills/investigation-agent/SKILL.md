@@ -5,8 +5,8 @@ description: "Use when running the investigation agent, changing its prompt, too
 
 # Investigation agent
 
-Code `opssoc/agents/investigation/`; prompt and budgets in `agent.md`; ADR 006;
-doc `docs/components/investigation-agent.md`.
+Code `opssoc/agents/investigation/`; prompt and budgets in `agent.md`; factor checklist
+in `factors.json` / `factors.py`; ADR 006, ADR 009; doc `docs/components/investigation-agent.md`.
 
 ## Run
 ```
@@ -36,8 +36,19 @@ running real investigations in bulk.
 the component doc when a check is added or removed; never describe it as proving a
 verdict correct.
 
+## Change the factor checklist
+1. Edit `factors.json`. Bump the set's `version` whenever a factor, weight or table
+   changes. Every factor's tables must be listed in the set's `tables`, and F1 and F8 must
+   exist (the decision rules use them).
+2. Change a decision rule only in `factors.check_decision`, and update its docstring,
+   ADR 009 (dated amendment) and the component doc's check list.
+3. Weights are uncalibrated judgment. Don't present the tally as a risk score, and don't
+   let a weighted sum set the verdict.
+4. Run `python -m pytest tests/test_investigation.py tests/test_eval.py`.
+
 ## Reviewing a case
 Open `<case>.investigation.json`: `rejected_verdicts` shows what the checks caught;
+`factor_tally` shows each factor's state and citations;
 each evidence record has the query, provenance and row hash. Replay evidence is labelled
 mapped / seeded alert; never present it as tenant data.
 

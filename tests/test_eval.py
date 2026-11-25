@@ -113,6 +113,8 @@ CASE = next(c for c in CASES if c.id == "tp-a3-reg-save-sam")
 def test_score_correct_case():
     r = score_case(CASE, record(tp_verdict()))
     assert r["verdict_correct"] and r["citations_valid"]
+    # No factor answers (agent v1 shape): the ADR 009 checks fail, citations still hold.
+    assert r["factor_checks_valid"] is False and r["factor_tally"] is None
     assert r["key_fact_recall"] == 1.0 and r["grounded_fact_recall"] == 1.0
     assert r["cost_usd"] == 0.42 and r["facts_missing"] == []
 

@@ -23,7 +23,8 @@ from opssoc.agents.investigation import (
     fence,
     to_case_report,
 )
-from opssoc.agents.investigation.agent import DEFINITION
+from opssoc.agents.investigation import factors as fx
+from opssoc.agents.investigation.agent import DEFINITION, Evidence, check_citations
 from opssoc.case import Verdict
 from opssoc.connectors.base import QueryResult, SecurityConnector, guard_query
 from opssoc.llm import SpendTracker, Tier, ToolCall, Turn, Usage
@@ -79,13 +80,35 @@ def turn(*calls, text="", stop=None, tokens=(1000, 100)):
                 Usage(*tokens))
 
 
+FACTOR_IDS = [f"F{n}" for n in range(1, 11)]
+
+
+def answers(default="unknown_not_checked", **states):
+    """Factor answers: states maps a factor ID to (state, evidence IDs)."""
+    out = []
+    for fid in FACTOR_IDS:
+        state, ids = states.get(fid, (default, []))
+        out.append({"factor": fid, "state": state, "reason": f"{fid} test answer",
+                    "evidence_ids": list(ids)})
+    return out
+
+
+TP_FACTORS = answers("neutral", F1=("malicious_indicator", ["EV-1"]),
+                     F2=("malicious_indicator", ["EV-0", "EV-1"]),
+                     F3=("neutral", ["EV-1"]), F4=("neutral", ["EV-0"]),
+                     F5=("neutral", ["EV-1"]), F6=("neutral", ["EV-1"]),
+                     F7=("neutral", ["EV-0"]), F8=("neutral", ["EV-1"]),
+                     F9=("unknown_not_checked", []), F10=("neutral", ["EV-1"]))
+
+
 def verdict(**over):
     v = {"verdict": "true_positive", "confidence": "high",
          "summary": "reg.exe saved the SAM hive from an encoded PowerShell launched by wscript.",
-         "hypotheses": [{"hypothesis": "credential theft", "status": "supported",
-                         "evidence_ids": ["EV-0", "EV-1"]},
-                        {"hypothesis": "admin backup", "status": "refuted",
-                         "evidence_ids": ["EV-1"]}],
+         "hypotheses": [{"hypothesis": "credential theft", "explanation": "malicious",
+                         "status": "supported", "evidence_ids": ["EV-0", "EV-1"]},
+                        {"hypothesis": "admin backup", "explanation": "benign",
+                         "status": "refuted", "evidence_ids": ["EV-1"]}],
+         "factors": TP_FACTORS,
          "timeline": [{"time": "2020-09-22T08:28:40Z", "event": "encoded PowerShell from wscript",
                        "evidence_ids": ["EV-1"]},
                       {"time": "2020-09-22 08:28:42", "event": "reg save HKLM\\sam",
@@ -183,8 +206,10 @@ def test_management_command_refused_and_not_recorded(tmp_path):
         turn(call("run_hunting_query", kql=".drop table DeviceProcessEvents", purpose="p")),
         turn(call("run_hunting_query", 2, kql="syntax error here", purpose="p")),
         turn(text="I cannot decide."),
-        turn(call("submit_verdict", 3, **verdict(verdict="inconclusive", findings=[],
-                                                 timeline=[], hypotheses=[]))),
+        turn(call("submit_verdict", 3, **verdict(verdict="inconclusive", confidence="low",
+                                                 findings=[], timeline=[],
+                                                 factors=answers(), hypotheses=[
+                    dict(h, evidence_ids=["EV-0"]) for h in verdict()["hypotheses"]]))),
     ], Tier.WRITING: [turn(text="note")]}, tmp_path, connector)
     inv = a.run(ALERT["id"])
     assert connector.queries == ["syntax error here"]
@@ -247,21 +272,19 @@ def test_fence_cannot_be_closed_by_log_text():
     assert out.count("</tool_output>") == 1 and out.endswith("</tool_output>")
 
 
-def test_check_verdict_rules():
-    from opssoc.agents.investigation.agent import Evidence
-
+def test_check_citation_rules():
     ev = {"EV-0": Evidence("EV-0", "alert", "b", None, "", [], [], [ROW], False, "h")}
-    assert check_verdict(verdict(hypotheses=[], timeline=[], findings=[
+    assert check_citations(verdict(hypotheses=[], timeline=[], factors=[], findings=[
         {"statement": "s", "evidence_ids": ["EV-0"]}]), ev) == []
-    problems = check_verdict(verdict(verdict="benign", findings=[], timeline=[],
-                                     hypotheses=[], confidence="certain"), ev)
+    problems = check_citations(verdict(verdict="benign", findings=[], timeline=[],
+                                       hypotheses=[], factors=[], confidence="certain"), ev)
     assert "a true_positive or benign verdict needs at least one finding" in problems
     assert any("confidence" in p for p in problems)
-    bad_time = check_verdict(verdict(hypotheses=[], findings=[
+    bad_time = check_citations(verdict(hypotheses=[], factors=[], findings=[
         {"statement": "s", "evidence_ids": ["EV-0"]}], timeline=[
         {"time": "yesterday", "event": "e", "evidence_ids": ["EV-0"]}]), ev)
     assert any("not ISO 8601" in p for p in bad_time)
-    no_cite = check_verdict(verdict(hypotheses=[], timeline=[], findings=[
+    no_cite = check_citations(verdict(hypotheses=[], timeline=[], factors=[], findings=[
         {"statement": "s", "evidence_ids": []}]), ev)
     assert any("cites no evidence" in p for p in no_cite)
 
@@ -273,3 +296,116 @@ def test_case_report_severity(severity, expected, tmp_path):
 
     report = to_case_report(Investigation(alert["id"], "inconclusive: x", None, []), alert)
     assert report.severity.value == expected
+
+
+# -- factor checklist and decision rules (ADR 009) ------------------------------------
+
+def _ev(*kinds):
+    rows = [ROW]
+    return {f"EV-{n}": Evidence(f"EV-{n}", k, "b", None, "", [], [], rows, False, "h")
+            for n, k in enumerate(kinds)}
+
+
+EV = _ev("alert", "query")
+
+
+def test_factor_file_loads_and_is_checked(tmp_path):
+    fset = fx.for_alert({})
+    assert fset.label == "endpoint-process v1"
+    assert [f.id for f in fset.factors] == FACTOR_IDS
+    assert fset.get("F9").answered_by == "analyst"
+    assert "F8 benign-explanation (weight high" in fset.render()
+    bad = tmp_path / "f.json"
+    bad.write_text(json.dumps({"sets": [{"id": "x", "version": 1, "applies_to": "", "tables": {},
+                                         "factors": [{"id": "F1", "name": "n", "weight": "huge",
+                                                      "answered_by": "logs", "question": "q",
+                                                      "tables": []}]}]}))
+    with pytest.raises(ValueError, match="bad weight"):
+        fx.load_sets(bad)
+
+
+def test_accepted_verdict_passes_all_checks_and_is_tallied(tmp_path):
+    assert check_verdict(verdict(), EV) == []
+    t = fx.tally(verdict(), fx.for_alert({}))
+    assert t["by_state"]["malicious_indicator"]["high"] == 2
+    assert t["by_state"]["unknown_not_checked"]["low"] == 1
+    assert t["factors"]["F2"]["evidence_ids"] == ["EV-0", "EV-1"]
+
+
+def test_factor_answers_must_be_complete_and_cited():
+    partial = [a for a in TP_FACTORS if a["factor"] != "F5"]
+    partial.append(dict(TP_FACTORS[0], factor="F99"))
+    partial.append(dict(TP_FACTORS[3], state="neutral", evidence_ids=[]))
+    problems = check_verdict(verdict(factors=partial), EV)
+    assert "factor F5 (prevalence) is not answered" in problems
+    assert any("F99): not a factor" in p for p in problems)
+    assert any("(F4): state neutral cites no evidence" in p for p in problems)
+    assert "factor F4 (account) is answered 2 times" in problems
+
+
+def test_no_telemetry_needs_a_coverage_record_and_analyst_factors_need_the_analyst():
+    v = verdict(factors=answers("neutral", **{
+        **{a["factor"]: (a["state"], a["evidence_ids"]) for a in TP_FACTORS},
+        "F3": ("unknown_no_telemetry", ["EV-1"]), "F9": ("neutral", ["EV-1"])}),
+        confidence="medium")
+    problems = check_verdict(v, EV)
+    assert any("(F3): unknown_no_telemetry must cite a coverage record" in p for p in problems)
+    assert any("only the analyst can answer F9" in p for p in problems)
+    ev = _ev("alert", "query", "coverage", "analyst")
+    v["factors"] = [dict(a, evidence_ids=["EV-2"]) if a["factor"] == "F3" else
+                    dict(a, evidence_ids=["EV-3"]) if a["factor"] == "F9" else a
+                    for a in v["factors"]]
+    assert check_verdict(v, ev) == []
+
+
+def test_hypotheses_need_a_benign_explanation():
+    one = verdict(hypotheses=[verdict()["hypotheses"][0]])
+    problems = check_verdict(one, EV)
+    assert "give at least two competing hypotheses" in problems
+    assert "at least one hypothesis must be a benign explanation" in problems
+
+
+def test_true_positive_on_the_alert_alone_is_rejected():
+    # The case ADR 009 found accepted in agent v1: TP citing only EV-0.
+    only_alert = answers("neutral", F2=("malicious_indicator", ["EV-0"]),
+                         **{f: ("neutral", ["EV-0"]) for f in FACTOR_IDS if f not in ("F2", "F9")},
+                         F9=("unknown_not_checked", []))
+    problems = check_verdict(verdict(factors=only_alert), EV)
+    assert any(p.startswith("true_positive needs a high-weight factor") for p in problems)
+
+
+def test_benign_rules_and_confidence_cap():
+    ev = _ev("alert", "query", "coverage")
+    base = {a["factor"]: (a["state"], a["evidence_ids"]) for a in TP_FACTORS}
+    base.update(F1=("neutral", ["EV-1"]), F2=("neutral", ["EV-1"]))
+    no_reason = verdict(verdict="benign", confidence="medium", factors=answers(**base))
+    assert any(p.startswith("benign needs F1 or F8") for p in check_verdict(no_reason, ev))
+    gap = dict(base, F8=("benign_indicator", ["EV-1"]), F3=("unknown_no_telemetry", ["EV-2"]))
+    problems = check_verdict(verdict(verdict="benign", confidence="medium",
+                                     factors=answers(**gap)), ev)
+    assert problems == ["benign is not allowed while high-weight factors lack telemetry: ['F3']"]
+    ok = dict(gap, F3=("neutral", ["EV-1"]))
+    assert check_verdict(verdict(verdict="benign", confidence="high",
+                                 factors=answers(**ok)), ev) == []
+    # Missing data does not block a true positive, but caps its confidence.
+    tp_gap = {a["factor"]: (a["state"], a["evidence_ids"]) for a in TP_FACTORS}
+    tp_gap["F3"] = ("unknown_no_telemetry", ["EV-2"])
+    capped = check_verdict(verdict(factors=answers(**tp_gap)), ev)
+    assert capped == ["confidence high is not allowed while high-weight factors are unknown: "
+                      "['F3']"]
+    assert check_verdict(verdict(confidence="medium", factors=answers(**tp_gap)), ev) == []
+
+
+def test_opening_lists_factors_and_record_keeps_tally(tmp_path):
+    a, provider = agent({Tier.REASONING: [
+        turn(call("run_hunting_query", kql="DeviceProcessEvents | take 1", purpose="p")),
+        turn(call("submit_verdict", 2, **verdict())),
+    ], Tier.WRITING: [turn(text="note")]}, tmp_path)
+    inv = a.run(ALERT["id"])
+    opening = provider.conversations[0].events[0][1]
+    assert "Factor checklist endpoint-process v1" in opening
+    assert opening.index("Factor checklist") < opening.index("<tool_output")
+    assert inv.factor_set == "endpoint-process v1"
+    assert inv.factor_tally["by_state"]["malicious_indicator"]["high"] == 2
+    assert inv.agent_version == "investigation v2"
+    assert inv.to_json()["factor_tally"]["factor_set"] == "endpoint-process v1"
