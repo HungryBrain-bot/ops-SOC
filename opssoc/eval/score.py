@@ -101,6 +101,8 @@ def summarise(results: list[dict]) -> dict:
         "cases": n,
         "verdict_accuracy": round(sum(r["verdict_correct"] for r in results) / n, 3),
         "inconclusive_or_none": sum(r["verdict"] in (None, "inconclusive") for r in results),
+        "insufficient_telemetry": sum(r["verdict"] == "insufficient_telemetry"
+                                      for r in results),
         "budget_stops": sum("budget" in str(r["status"]) for r in results),
         "mean_key_fact_recall": round(sum(r["key_fact_recall"] for r in results) / n, 3),
         "mean_grounded_fact_recall": round(sum(r["grounded_fact_recall"] for r in results)

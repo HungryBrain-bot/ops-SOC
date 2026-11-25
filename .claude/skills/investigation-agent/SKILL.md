@@ -46,9 +46,17 @@ verdict correct.
    let a weighted sum set the verdict.
 4. Run `python -m pytest tests/test_investigation.py tests/test_eval.py`.
 
+## Coverage probe (ADR 009 step 2)
+- `coverage.py` probes each table in the factor set's `tables`. That map gives the host,
+  time and key columns. Add a table there before a factor lists it.
+- Only `alert_host`'s check stands between alert text and KQL. Never put any other alert
+  field into a query string.
+- A new gap state goes into `GAP_STATES`, the module docstring and the component doc.
+
 ## Reviewing a case
 Open `<case>.investigation.json`: `rejected_verdicts` shows what the checks caught;
-`factor_tally` shows each factor's state and citations;
+`factor_tally` shows each factor's state and citations, EV-1 the coverage probe, and
+`missing_telemetry` the gaps behind an `insufficient_telemetry` verdict;
 each evidence record has the query, provenance and row hash. Replay evidence is labelled
 mapped / seeded alert; never present it as tenant data.
 

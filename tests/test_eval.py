@@ -26,19 +26,27 @@ CASES = load_cases()
 def test_ground_truth_integrity():
     sources = load_sources()
     eval_ids = {r.id for r in load_eval_rules()}
-    assert len({c.id for c in CASES}) == len(CASES) == 12
+    assert len({c.id for c in CASES}) == len(CASES) == 14
     for case in CASES:
         assert case.rule in DAC_RULES | eval_ids
         assert case.dataset in PINS["datasets"]
-        assert case.expected_verdict in ("true_positive", "benign")
+        assert case.expected_verdict in ("true_positive", "benign", "insufficient_telemetry")
         assert case.key_facts
+        assert bool(case.hide_tables) == (case.expected_verdict == "insufficient_telemetry")
         if case.label["kind"] == "otrf-metadata":
             assert sources[case.label["ref"]]["dataset"] == case.dataset
+        elif case.label["kind"] == "ops-soc-construction":
+            # Same alert as a labelled case, with every factor table hidden.
+            twin = [c for c in CASES if c.rule == case.rule and c.dataset == case.dataset
+                    and c.row == case.row and not c.hide_tables]
+            assert len(twin) == 1 and twin[0].id in case.label["basis"]
+            assert set(case.key_facts) <= set(case.hide_tables)
         else:
             assert case.label["kind"] == "ops-soc-judgment" and len(case.label["basis"]) > 100
     for ref, source in sources.items():
         assert re.fullmatch(r"SDWIN-\d{12}", ref) and len(source["sha256"]) == 64
-    assert {c.expected_verdict for c in CASES} == {"true_positive", "benign"}
+    assert {c.expected_verdict for c in CASES} == {"true_positive", "benign",
+                                                   "insufficient_telemetry"}
 
 
 def test_eval_rules_are_loosened_rules_not_detections():
@@ -151,3 +159,30 @@ def test_run_refuses_without_yes(tmp_path):
     alerts.write_text(json.dumps({"alerts": []}))
     with pytest.raises(SystemExit, match="alerts match"):
         cli.main(["run", "--provider", "anthropic", "--alerts", str(alerts)])
+
+
+def test_hidden_tables_connector_fails_like_a_missing_table():
+    from opssoc.agents.investigation import coverage as cov
+    from opssoc.agents.investigation import factors as fx
+    from opssoc.eval.hiding import EMULATOR_400, HiddenTablesConnector
+    from tests.test_investigation import ALERT, MemoryConnector
+
+    inner = MemoryConnector()
+    hidden = HiddenTablesConnector(inner, ["DeviceProcessEvents", "SecurityEvent"])
+    with pytest.raises(RuntimeError) as err:
+        hidden.hunt("union DeviceFileEvents, DeviceProcessEvents | take 1")
+    assert str(err.value) == EMULATOR_400 and "DeviceProcessEvents" not in str(err.value)
+    assert hidden.hunt("DeviceFileEvents | take 1").rows == inner.rows
+    states = {r["table"]: r["state"] for r in cov.probe(hidden, fx.for_alert({}), ALERT)}
+    assert states["DeviceProcessEvents"] == states["SecurityEvent"] == "missing_table"
+    assert states["DeviceFileEvents"] == "present"
+    assert hidden.get_alert(ALERT["id"]) is ALERT
+
+
+def test_score_insufficient_telemetry_case():
+    case = next(c for c in CASES if c.id == "it-a3-reg-save-sam-no-telemetry")
+    r = score_case(case, record(tp_verdict(
+        verdict="insufficient_telemetry",
+        summary="DeviceProcessEvents and SecurityEvent cannot be read.")))
+    assert r["verdict_correct"] and r["key_fact_recall"] == 1.0
+    assert summarise([r])["insufficient_telemetry"] == 1

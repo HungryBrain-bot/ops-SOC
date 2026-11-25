@@ -19,7 +19,7 @@ full run; use `--only <case>` to try one.
 ## Compare a change
 Run the same cases before and after, on the same provider and models, more than once if
 the difference is small. Report accuracy, recall, grounded recall, invalid citations,
-inconclusive/budget stops and cost side by side. Never report one blended number, and
+inconclusive/budget stops, insufficient_telemetry, `factor_checks_invalid` and cost side by side. Never report one blended number, and
 never claim an improvement from a single run of 12 cases.
 
 ## Add a case
@@ -39,3 +39,9 @@ activity; set `status: eval`; never deploy it. Record why in ADR 007's amendment
 - Don't score scripted-provider runs and present them as model results.
 - Don't relabel a case to make a run pass; amend the label only with new evidence, noted
   in BUILD_LOG.md.
+
+## Missing-telemetry cases (ADR 009)
+A case with `hide_tables` runs through `opssoc/eval/hiding.py`, which fails any query that
+names a hidden table the way the emulator does. Each one reuses an alert that another case
+labels (the integrity test checks this). Its label kind is `ops-soc-construction`, and its
+key facts are table names. Add one only with the owner's review of the label.

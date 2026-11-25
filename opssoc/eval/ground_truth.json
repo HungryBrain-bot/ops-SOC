@@ -1,5 +1,5 @@
 {
-  "_about": "Ground truth for the eval harness (ADR 007). The agent never reads this file. Each case names the replay alert it labels (rule, dataset, row substrings) and the verdict a correct investigation reaches. Labels come from the OTRF dataset metadata (sources below, read at the pinned OTRF commit with git on 2026-11-24) or are this project's judgment, marked ops-soc-judgment with the recorded evidence behind them. key_facts are strings taken from the recorded events that a correct report states.",
+  "_about": "Ground truth for the eval harness (ADR 007). The agent never reads this file. Each case names the replay alert it labels (rule, dataset, row substrings) and the verdict a correct investigation reaches. Labels come from the OTRF dataset metadata (sources below, read at the pinned OTRF commit with git on 2026-11-24) or are this project's judgment, marked ops-soc-judgment with the recorded evidence behind them. key_facts are strings taken from the recorded events that a correct report states. Cases with hide_tables (label kind ops-soc-construction, ADR 009) replay an alert another case labels, with those tables hidden from the agent; their key_facts are table names, not strings from the recorded events.",
   "otrf_commit": "d9d40ef123d2c87d5d3df28c96bcab4f0faccc87",
   "fetched": "2026-11-24",
   "sources": {
@@ -264,6 +264,54 @@
       "key_facts": [
         "MsMpEng.exe",
         "WindowsDefender"
+      ]
+    },
+    {
+      "id": "it-a3-reg-save-sam-no-telemetry",
+      "rule": "20cda3e9-edbf-48e5-8994-fe1dbd1d3d18",
+      "dataset": "otrf-empire-reg-dump-sam",
+      "row": {},
+      "expected_verdict": "insufficient_telemetry",
+      "label": {
+        "kind": "ops-soc-construction",
+        "basis": "Constructed by this project (ADR 009 step 2): the eval hides every table of the factor set endpoint-process (DeviceProcessEvents, DeviceNetworkEvents, DeviceFileEvents, DeviceRegistryEvents, SecurityEvent) from the agent for this case. Only the alert is left. Under the decision rules a true positive needs telemetry beyond the alert and a benign verdict needs F1 or F8 answered from telemetry, so a correct investigation reports insufficient_telemetry and names the missing tables. The same alert without hidden tables is case tp-a3-reg-save-sam.",
+        "reviewed": "pending owner review"
+      },
+      "key_facts": [
+        "DeviceProcessEvents",
+        "SecurityEvent"
+      ],
+      "hide_tables": [
+        "DeviceProcessEvents",
+        "DeviceNetworkEvents",
+        "DeviceFileEvents",
+        "DeviceRegistryEvents",
+        "SecurityEvent"
+      ]
+    },
+    {
+      "id": "it-bn-e2-defender-run-key-no-telemetry",
+      "rule": "ops-eval-e2",
+      "dataset": "otrf-empire-runkey-standard-user",
+      "row": {
+        "Image": "MsMpEng.exe"
+      },
+      "expected_verdict": "insufficient_telemetry",
+      "label": {
+        "kind": "ops-soc-construction",
+        "basis": "Constructed by this project (ADR 009 step 2): the eval hides every table of the factor set endpoint-process (DeviceProcessEvents, DeviceNetworkEvents, DeviceFileEvents, DeviceRegistryEvents, SecurityEvent) from the agent for this case. Only the alert is left. Under the decision rules a true positive needs telemetry beyond the alert and a benign verdict needs F1 or F8 answered from telemetry, so a correct investigation reports insufficient_telemetry and names the missing tables. The same alert without hidden tables is case bn-e2-defender-run-key.",
+        "reviewed": "pending owner review"
+      },
+      "key_facts": [
+        "DeviceProcessEvents",
+        "DeviceRegistryEvents"
+      ],
+      "hide_tables": [
+        "DeviceProcessEvents",
+        "DeviceNetworkEvents",
+        "DeviceFileEvents",
+        "DeviceRegistryEvents",
+        "SecurityEvent"
       ]
     }
   ]

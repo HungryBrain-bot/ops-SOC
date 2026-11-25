@@ -3,13 +3,13 @@
   "sets": [
     {
       "id": "endpoint-process",
-      "version": 1,
+      "version": 2,
       "applies_to": "Alerts on a process event on one host (every replay alert today: detection_As_Code A1-A4 and their eval variants).",
       "tables": {
         "DeviceProcessEvents": {"host_column": "DeviceName", "time_column": "Timestamp",
                                 "key_columns": ["ProcessCommandLine", "InitiatingProcessFileName", "AccountName"]},
         "DeviceNetworkEvents": {"host_column": "DeviceName", "time_column": "Timestamp",
-                                "key_columns": ["RemoteIP", "RemoteUrl", "InitiatingProcessFileName"]},
+                                "key_columns": ["RemoteIP", "InitiatingProcessFileName"]},
         "DeviceFileEvents": {"host_column": "DeviceName", "time_column": "Timestamp",
                              "key_columns": ["FolderPath", "InitiatingProcessFileName"]},
         "DeviceRegistryEvents": {"host_column": "DeviceName", "time_column": "Timestamp",

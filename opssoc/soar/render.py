@@ -19,6 +19,11 @@ def to_markdown(report: CaseReport) -> str:
     if report.mitre_techniques:
         lines.append(f"**ATT&CK:** {', '.join(report.mitre_techniques)}")
     lines += ["", "### Summary", "", report.summary, ""]
+    if report.missing_telemetry:
+        lines += ["### Missing telemetry", "",
+                  "Factors the agent could not answer because the data is not there:", ""]
+        lines += [f"- {item}" for item in report.missing_telemetry]
+        lines.append("")
     if report.evidence:
         lines += ["### Evidence", "", "| ID | Source | Finding | Data |", "|---|---|---|---|"]
         for item in report.evidence:

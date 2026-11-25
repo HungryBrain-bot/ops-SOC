@@ -16,6 +16,7 @@ class Verdict(StrEnum):
     TRUE_POSITIVE = "true_positive"
     BENIGN = "benign"
     INCONCLUSIVE = "inconclusive"
+    INSUFFICIENT_TELEMETRY = "insufficient_telemetry"  # ADR 009: data missing, not undecided
 
 
 class Severity(StrEnum):
@@ -32,7 +33,7 @@ class EvidenceItem:
     source: str  # connector + table, e.g. "graph:DeviceProcessEvents"
     finding: str
     query: str | None = None
-    provenance: str = "recorded"  # recorded | mapped | hand-written (CLAUDE.md conventions)
+    provenance: str = "recorded"  # recorded | mapped | hand-written | computed (CLAUDE.md)
 
 
 @dataclass
@@ -47,6 +48,7 @@ class CaseReport:
     recommended_actions: list[str] = field(default_factory=list)
     mitre_techniques: list[str] = field(default_factory=list)
     secops_case_id: str | None = None  # Google SecOps case holding the source alert
+    missing_telemetry: list[str] = field(default_factory=list)  # ADR 009, per factor
 
     def __post_init__(self) -> None:
         self.verdict = Verdict(self.verdict)

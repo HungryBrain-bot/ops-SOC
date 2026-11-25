@@ -92,7 +92,7 @@ def test_investigation_tools_on_the_emulator(replay, tmp_path):
         Turn("done", [], "end", "", Usage()), Turn("done", [], "end", "", Usage())]}, spend)
     inv = InvestigationAgent(replay, provider).run(alert["id"])
     assert inv.status == "inconclusive: the model ended without submit_verdict"
-    ev = inv.evidence[1]
+    ev = inv.evidence[2]  # EV-1 is the coverage probe (ADR 009)
     assert ev.rows and all(r["InitiatingProcessFileName"] == "powershell.exe" for r in ev.rows)
     assert any("not Defender telemetry" in p for p in ev.provenance)
 
@@ -110,7 +110,7 @@ def test_eval_rules_and_ground_truth_cover_every_alert():
     assert by_eval == {"ops-eval-e1": 2, "ops-eval-e2": 3}
     m = match(load_cases(), alerts)
     assert m.problems == [] and m.unlabelled == []
-    assert len(m.pairs) == 12
+    assert len(m.pairs) == 14  # 12 alerts; two constructed cases reuse a labelled alert
 
 
 def test_key_facts_are_in_the_recorded_data():
@@ -119,9 +119,33 @@ def test_key_facts_are_in_the_recorded_data():
     from opssoc.replay.__main__ import dataset_events
 
     text = {}
-    for case in load_cases():
+    for case in [c for c in load_cases() if not c.hide_tables]:
         if case.dataset not in text:
             raw = json.dumps(dataset_events(case.dataset))
             text[case.dataset] = raw.replace("\\\\", "\\").lower()
         missing = [f for f in case.key_facts if f.lower() not in text[case.dataset]]
         assert not missing, (case.id, missing)
+
+
+def test_coverage_probe_on_the_emulator(replay):
+    """ADR 009 step 2: the probe on seeded alerts in the real emulator. The A3 alert's
+    host has process and Security rows around it, and no network or registry rows. A
+    table that does not exist is found by its schema query (the emulator's error does
+    not name it). The A4 bitsadmin alert's host has no Device* rows within the window:
+    the recorded Sysmon events are about four hours after the Security events."""
+    from opssoc.agents.investigation import coverage as cov
+    from opssoc.agents.investigation import factors as fx
+
+    fset = fx.for_alert({})
+    a3 = next(a for a in replay.list_alerts(100) if a["providerAlertId"].startswith("20cda3e9"))
+    states = {r["table"]: r["state"] for r in cov.probe(replay, fset, a3)}
+    assert states == {"DeviceProcessEvents": "present", "DeviceNetworkEvents": "no_rows_for_host",
+                      "DeviceFileEvents": "present", "DeviceRegistryEvents": "no_rows_for_host",
+                      "SecurityEvent": "present"}
+    assert cov.unreadable_tables(replay, "DeviceLogonEvents | take 1") == ["DeviceLogonEvents"]
+    assert cov.unreadable_tables(replay, "DeviceProcessEvents | where NoSuchColumn == 1") == []
+    a4 = next(a for a in replay.list_alerts(100)
+              if a["additionalData"]["replayDataset"] == "otrf-bitsadmin-download")
+    states = {r["table"]: r["state"] for r in cov.probe(replay, fset, a4)}
+    assert states["DeviceProcessEvents"] == "no_rows_for_host"
+    assert states["SecurityEvent"] == "present"

@@ -26,6 +26,7 @@ class Case:
     expected_verdict: str
     label: dict
     key_facts: list
+    hide_tables: tuple = ()  # ADR 009: tables the eval hides from the agent for this case
 
     def matches(self, alert: dict) -> bool:
         extra = alert.get("additionalData") or {}
@@ -39,7 +40,7 @@ class Case:
 
 def load_cases(path: Path = GROUND_TRUTH) -> list[Case]:
     data = json.loads(path.read_text(encoding="utf-8"))
-    return [Case(**c) for c in data["cases"]]
+    return [Case(**dict(c, hide_tables=tuple(c.get("hide_tables", ())))) for c in data["cases"]]
 
 
 def load_sources(path: Path = GROUND_TRUTH) -> dict:

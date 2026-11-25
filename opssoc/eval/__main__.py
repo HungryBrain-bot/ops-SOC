@@ -75,12 +75,16 @@ def main(argv: list[str] | None = None) -> int:
     if not args.yes:
         raise SystemExit(f"{len(chosen)} investigations, up to USD {worst:.2f} "
                          "(per-case budget). Re-run with --yes to spend it.")
-    agent = InvestigationAgent(ReplayConnector(), get_provider(args.provider))
+    from opssoc.eval.hiding import HiddenTablesConnector
+
+    replay, provider = ReplayConnector(), get_provider(args.provider)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     out = Path(args.out or f"build/eval/{args.provider}-{stamp}")
     out.mkdir(parents=True, exist_ok=True)
     for case in chosen:
-        record = agent.run(matching.pairs[case.id]["id"])
+        connector = HiddenTablesConnector(replay, case.hide_tables) if case.hide_tables \
+            else replay
+        record = InvestigationAgent(connector, provider).run(matching.pairs[case.id]["id"])
         (out / f"{case.id}.investigation.json").write_text(
             json.dumps(record.to_json(), indent=2, default=str), encoding="utf-8")
         print(f"{case.id}: {record.status} "
