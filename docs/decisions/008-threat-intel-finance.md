@@ -79,3 +79,17 @@ not only on its ATT&CK description.
   are not checked byte-for-byte. Five sources are news reports of vendor research, not the
   vendor's own page. Lazarus Group overlaps APT38 and Andariel in ATT&CK, so techniques
   they share are counted for each. Status stays `proposed` until the owner signs it off.
+
+## Amendment (2026-11-25): profile approved; gap handoff file
+- **Approval**: the owner approved the web-checked profile on 2026-11-25. The profile file
+  records it under `approval` (by, date, basis). `check_profile` accepts only `proposed`
+  or `approved`, and an `approved` profile must have that record. Any change to the
+  groups returns the status to `proposed` until the owner approves again.
+- **Handoff**: `analyse` writes `build/intel/finance_gaps.json` (schema
+  `opssoc.finance-gaps/1`) whenever detection_As_Code rules are loaded. The file holds the
+  top-25 gaps, the partly covered techniques with their related rules, and the
+  pre-compromise techniques, each with its groups, plus the ATT&CK, KEV and DaC versions.
+  It has no timestamp, so it is reproducible. This is the contract the detection agent
+  will read. It does not decide which rules get built.
+- **Check command**: `python -m opssoc.agents.threat_intel check` runs `check_profile` on
+  the pinned bundle and exits 1 on any problem. CI runs it before `analyse`.

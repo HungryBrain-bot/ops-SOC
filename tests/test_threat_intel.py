@@ -13,6 +13,7 @@ from opssoc.agents.threat_intel.agent import (
     check_brief,
     report_markdown,
     write_brief,
+    write_outputs,
 )
 from opssoc.intel import finance
 from opssoc.intel.attack import Attack, plain
@@ -132,7 +133,42 @@ def test_kev_links():
 
 
 def test_no_rules_means_no_gap_list():
-    assert finance.analyse(profile(), ATTACK, KEV, None)["gaps"] is None
+    analysis = finance.analyse(profile(), ATTACK, KEV, None)
+    assert analysis["gaps"] is None and finance.gap_handoff(analysis, None) is None
+
+
+def test_profile_status_and_approval():
+    assert finance.check_profile(profile(status="draft"), ATTACK) == [
+        "profile status 'draft', needs proposed or approved"]
+    assert finance.check_profile(profile(status="approved"), ATTACK) == [
+        "approved profile has no approval by, date, basis"]
+    ok = profile(status="approved", approval={"by": "owner", "date": "2026-11-25",
+                                              "basis": "b"})
+    assert finance.check_profile(ok, ATTACK) == []
+
+
+def test_gap_handoff():
+    rules = [rule("A1", ["T1059.001"]), rule("P", ["T1566"])]
+    analysis = finance.analyse(profile(), ATTACK, KEV, rules, top=10)
+    h = finance.gap_handoff(analysis, "abc123")
+    assert h["schema"] == "opssoc.finance-gaps/1" and h["dac_commit"] == "abc123"
+    assert [g["technique"] for g in h["gaps"]] == [t["id"] for t in analysis["gaps"]]
+    assert all(g["coverage"] == "none" and g["related_rules"] == [] for g in h["gaps"])
+    partial = {p["technique"]: p for p in h["partial"]}
+    assert partial["T1566.001"]["related_rules"] == ["P"]
+    assert h["pre_compromise"] == ["T1588.002"]
+    row = next(g for g in h["gaps"] if g["technique"] == "T1059.003")
+    assert {"id": "G0080", "name": "Cobalt Group", "tier": "primary"} in row["groups"]
+    assert finance.gap_handoff(analysis, "abc123") == h          # deterministic
+
+
+def test_write_outputs_gaps_file(tmp_path):
+    analysis = finance.analyse(profile(), ATTACK, KEV, [rule("A1", ["T1059.001"])])
+    write_outputs(tmp_path, analysis, None, finance.gap_handoff(analysis, "c"))
+    gaps = json.loads((tmp_path / "finance_gaps.json").read_text())
+    assert gaps["schema"] == finance.HANDOFF_SCHEMA
+    write_outputs(tmp_path, finance.analyse(profile(), ATTACK, KEV, None), None, None)
+    assert not (tmp_path / "finance_gaps.json").exists()         # stale file removed
 
 
 ANALYSIS = finance.analyse(profile(), ATTACK, KEV, [rule("A1", ["T1059.001"])])
@@ -178,7 +214,7 @@ def test_report_markdown():
 
 def test_real_profile_file_shape():
     p = finance.load_profile()
-    assert p["status"] == "proposed" and len(p["groups"]) == 25
+    assert p["status"] in {"proposed", "approved"} and len(p["groups"]) == 25
     assert {g.tier for g in p["groups"]} == {"primary", "listed"}
     assert len({g.id for g in p["groups"]}) == 25
     assert all(e["reason"] for e in p["excluded"])

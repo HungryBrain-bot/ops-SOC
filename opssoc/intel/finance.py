@@ -75,6 +75,13 @@ def check_profile(profile: dict, attack: Attack) -> list[str]:
                 problems.append(f"{g.id}: web source missing {', '.join(missing)}")
         if g.tier not in profile["tier_weights"]:
             problems.append(f"{g.id}: unknown tier {g.tier}")
+    if profile.get("status") not in {"proposed", "approved"}:
+        problems.append(f"profile status {profile.get('status')!r}, needs proposed or approved")
+    if profile.get("status") == "approved":
+        approval = profile.get("approval") or {}
+        missing = [k for k in ("by", "date", "basis") if not approval.get(k)]
+        if missing:
+            problems.append(f"approved profile has no approval {', '.join(missing)}")
     for e in profile.get("excluded", []):
         if e["id"] in {g.id for g in profile["groups"]}:
             problems.append(f"{e['id']}: both included and excluded")
@@ -170,3 +177,37 @@ def analyse(profile: dict, attack: Attack, kev: Kev, rules=None, top: int = 25) 
                    "kev_ransomware_known": sum(e.get("ransomware") == "Known"
                                                for e in kev_rows)},
     }
+
+
+HANDOFF_SCHEMA = "opssoc.finance-gaps/1"
+
+
+def gap_handoff(analysis: dict, dac_commit: str | None) -> dict | None:
+    """The detection agent's input: the top techniques with no detection_As_Code rule, and
+    those only partly covered, with the profile groups behind each. Deterministic (no
+    timestamp), so the same snapshots, profile and rules give the same file. None when no
+    rules were loaded: without them there is no coverage to hand off."""
+    if analysis.get("gaps") is None:
+        return None
+    groups = {g["id"]: {"id": g["id"], "name": g["name"], "tier": g["tier"]}
+              for g in analysis["groups"]}
+
+    def row(t: dict) -> dict:
+        return {"technique": t["id"], "name": t["name"], "tactics": t["tactics"],
+                "score": t["score"], "coverage": t["coverage"], "related_rules": t["rules"],
+                "groups": [groups[g] for g in t["groups"]]}
+
+    head = analysis["priority_techniques"][:analysis["top"]]
+    return {
+        "schema": HANDOFF_SCHEMA,
+        "attack_version": analysis["attack_version"], "kev_version": analysis["kev_version"],
+        "dac_commit": dac_commit, "profile_status": analysis["profile_status"],
+        "top": analysis["top"],
+        "gaps": [row(t) for t in analysis["gaps"]],
+        "partial": [row(t) for t in head if t["coverage"] == "partial"],
+        "pre_compromise": [t["id"] for t in analysis["pre_compromise"]],
+        "note": "A gap means no non-experimental detection_As_Code rule maps the technique "
+                "or its parent / sub-techniques. It is not a request to build a rule: new "
+                "rules follow detection_As_Code's scope and the owner's approval.",
+    }
+

@@ -14,20 +14,42 @@ brief from those results, with every ID checked.
 ## How
 ```
 python -m opssoc.agents.threat_intel fetch                 # pinned snapshots, SHA-256 checked
+python -m opssoc.agents.threat_intel check                 # profile vs. the pinned bundle
 OPSSOC_DAC_PATH=../detection_As_Code \
 python -m opssoc.agents.threat_intel analyse [--brief --provider anthropic]
 ```
-Writes `build/intel/finance_priorities.json` and `.md`. CI job `intel` runs this without
-`--brief` and uploads the result as the `finance-priorities` artifact.
+`analyse` writes to `build/intel/`:
+- `finance_priorities.json` and `.md`: the full analysis and the report.
+- `finance_gaps.json`: written only when DaC rules were loaded. It is the detection agent's
+  input (schema `opssoc.finance-gaps/1`): the top-25 techniques with no rule, those only
+  partly covered (with the related rules), and the pre-compromise ones, each with the
+  profile groups behind it, plus the ATT&CK, KEV and DaC versions. It has no timestamp, so
+  the same inputs give the same file. A run without DaC removes a stale copy.
 
-Result on the pinned snapshots (2026-11-24): 25 groups, 269 techniques, 30 CVEs named by
-ATT&CK for them, 27 in KEV (14 with known ransomware use). Top five techniques:
-T1588.002 Tool (resource development, outside SIEM telemetry), T1059.001 PowerShell
-(covered by DaC A1), T1566.001 Spearphishing Attachment, T1204.002 Malicious File, T1105
-Ingress Tool Transfer (covered by DaC A4). 21 of the top 25 have no rule (unchanged after the 2026-11-25 profile revision; 291 techniques, 28 KEV CVEs).
+`check` exits 1 if a group is not active in the bundle, an ATT&CK sentence is not verbatim,
+web evidence is incomplete, or the status is not `proposed` / `approved`. An `approved`
+profile must also have `approval.by`, `date` and `basis`. CI job `intel` runs `check`, then
+`analyse` without `--brief` against DaC at the pinned commit, and uploads `build/intel/` as
+the `finance-priorities` artifact.
+
+Result on the pinned snapshots, using the profile approved on 2026-11-25 and DaC 51080aa:
+- 25 groups (6 primary, 19 listed) and 291 techniques.
+- ATT&CK names 31 CVEs for these groups: 28 are in KEV, and 15 of those have known
+  ransomware use.
+- Top five techniques:
+  - T1059.001 PowerShell, covered by DaC A1.
+  - T1588.002 Tool: resource development, outside SIEM telemetry.
+  - T1566.001 Spearphishing Attachment.
+  - T1204.002 Malicious File.
+  - T1105 Ingress Tool Transfer, covered by DaC A4.
+- Coverage of the top 25:
+  - 3 exact: A1, A2, A4.
+  - 1 partial: T1078, from the B-track T1078.004 rules and B12.
+  - 1 pre-compromise: T1588.002.
+  - 20 gaps.
 
 ## Why this method
-The sector judgment is in one reviewable file with a source sentence per group; every
+The sector judgment is in one reviewable file with a fetched web source per group (and the ATT&CK sentence where there is one); every
 number after that is computed from pinned data, so two runs agree and a reviewer can trace
 each line. The model only phrases what was computed, and the ID check stops it adding
 groups, techniques or CVEs.

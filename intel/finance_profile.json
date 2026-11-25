@@ -1,6 +1,6 @@
 {
-  "_about": "Finance-sector threat profile (ADR 001 point 4, ADR 008, amended 2026-11-25). A curated judgment, not a source fact: neither ATT&CK nor KEV has a sector field. Every included group carries web evidence: a fetched public report (vendor research, government advisory or indictment, or a news report of one) that names a financial-sector victim or target, with URL, publication and fetch dates. Groups first chosen from ATT&CK text also keep that sentence, which a test checks against the pinned bundle. Status: proposed, pending the owner's review.",
-  "status": "proposed",
+  "_about": "Finance-sector threat profile (ADR 001 point 4, ADR 008, amended 2026-11-25). A curated judgment, not a source fact: neither ATT&CK nor KEV has a sector field. Every included group carries web evidence: a fetched public report (vendor research, government advisory or indictment, or a news report of one) that names a financial-sector victim or target, with URL, publication and fetch dates. Groups first chosen from ATT&CK text also keep that sentence, which a test checks against the pinned bundle. Status: approved by the owner on 2026-11-25 (see approval).",
+  "status": "approved",
   "attack_version": "ATT&CK Enterprise v20.1 (attack-stix-data a8db2f5)",
   "curation_rule": "Include a group when a fetched public report names financial-sector organisations (banks, financial institutions, financial-services, investment or cryptocurrency-exchange companies, ATMs or SWIFT) among its victims or targets. An ATT&CK sentence alone is not enough (amended 2026-11-25, owner's request). 'primary': finance is the group's main target. 'listed': finance is one of several sectors. Being financially motivated, stealing payment cards at merchants, targeting finance policy bodies, or robbing other businesses' bank accounts is not enough. web_evidence.status: confirmed (a report names a finance victim or target), weak (finance appears only as a label, e.g. a figure), not_found (no fetched report names finance), not_finance (reports name victims outside finance).",
   "tier_weights": {
@@ -608,5 +608,10 @@
       }
     }
   ],
-  "web_evidence_note": "Quotes came through a fetch tool that summarises pages with a small model; they were asked for verbatim but are not checked byte-for-byte against the page."
+  "web_evidence_note": "Quotes came through a fetch tool that summarises pages with a small model; they were asked for verbatim but are not checked byte-for-byte against the page.",
+  "approval": {
+    "by": "owner (Venu)",
+    "date": "2026-11-25",
+    "basis": "Owner chose 'Approve it' when asked whether to mark the web-checked profile (merged in PR #9) approved. To revise, set status back to proposed."
+  }
 }

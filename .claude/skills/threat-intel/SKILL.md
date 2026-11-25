@@ -11,6 +11,7 @@ ADR 008; doc `docs/components/threat-intel.md`.
 ## Run
 ```
 python -m opssoc.agents.threat_intel fetch
+python -m opssoc.agents.threat_intel check     # must print 0 problem(s)
 OPSSOC_DAC_PATH=<detection_As_Code checkout> python -m opssoc.agents.threat_intel analyse
 ```
 `--brief` calls the LLM (spends money); the deterministic report is complete without it.
@@ -30,8 +31,9 @@ OPSSOC_DAC_PATH=<detection_As_Code checkout> python -m opssoc.agents.threat_inte
    leave `source_sentence` null. `check_profile` must return no problems.
 4. A group you leave out goes in `excluded` with the reason and its `web_evidence`
    (`not_found` or `not_finance`).
-5. Never add a group or quote from memory. Leave `status` as `proposed` until the owner
-   signs it off.
+5. Never add a group or quote from memory. Any change to the groups sets `status` back to
+   `proposed`. Only the owner moves it to `approved`, and an approval is recorded in
+   `approval` (by, date, basis); `check` requires it.
 
 ## Bump a snapshot
 1. Download the new file at a commit, hash it, update URL, commit, version and SHA-256 in
@@ -41,8 +43,12 @@ OPSSOC_DAC_PATH=<detection_As_Code checkout> python -m opssoc.agents.threat_inte
    old and new counts in BUILD_LOG.md.
 
 ## Gaps to detections
-The `gaps` list in `finance_priorities.json` is the input for new detection_As_Code
-rules. Adding a rule there follows detection_As_Code's own scope rules and owner approval.
+`build/intel/finance_gaps.json` (schema `opssoc.finance-gaps/1`) is the detection agent's
+input. It is written only when `OPSSOC_DAC_PATH` is set. It holds the gaps, the partly
+covered techniques and their related rules, and the groups behind each one. A gap is not a
+request for a rule: adding one follows detection_As_Code's own scope rules and needs the
+owner's approval. If you change the file's fields, bump the schema version and update
+`tests/test_threat_intel.py::test_gap_handoff`.
 
 ## Do NOT
 - Don't let the model choose groups, techniques or CVEs; it only writes the brief.
