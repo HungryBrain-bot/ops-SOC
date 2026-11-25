@@ -202,3 +202,12 @@
   correct figure is 20 gaps plus T1588.002 reported apart. Counts are unchanged (291
   techniques, 31 CVEs named, 28 in KEV, 15 with known ransomware use).
 - Not run: the model-written brief (no LLM spend approved).
+
+## 2026-11-25 - ADR 009 proposed: investigation decision logic
+- Owner asked how the investigation agent decides and for factors, a telemetry check, analyst
+  notification and an analyst feedback loop. ADR 009 explains agent v1 (what code enforces
+  versus what only the prompt asks) and proposes the design. Status `proposed`; no code
+  changed.
+- Checked by calling `check_verdict` directly: a high-confidence `true_positive` that cites
+  only EV-0 and has no hypotheses is accepted; so is an `inconclusive` with no findings and
+  an empty `not_checked`.

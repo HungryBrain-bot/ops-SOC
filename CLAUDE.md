@@ -12,7 +12,8 @@ Architecture: docs/decisions/001-architecture.md (ADR 001). SOAR writer:
 docs/decisions/002-soar-writer.md (ADR 002). Connectors and replay:
 docs/decisions/003-connectors-and-replay.md (ADR 003). Replay alerts: ADR 004.
 LLM layer: ADR 005. Investigation agent: ADR 006. Eval harness: ADR 007. Threat intel (finance):
-ADR 008.
+ADR 008. Investigation decision logic (factors, telemetry sufficiency, analyst
+loop): ADR 009, proposed, not built.
 
 Before adding an agent, connector, data source or write path beyond Scope,
 check the request is explicit from the owner (Venu).
