@@ -37,7 +37,12 @@ class ProfileGroup:
     id: str
     name: str
     tier: str
-    source_sentence: str
+    source_sentence: str | None       # ATT&CK sentence, when the group was chosen from it
+    web_evidence: dict = field(default_factory=dict)
+
+
+EVIDENCE_OK = {"confirmed", "weak"}
+SOURCE_KEYS = ("publisher", "url", "fetched", "quote")
 
 
 def load_profile(path: Path = PROFILE) -> dict:
@@ -47,15 +52,27 @@ def load_profile(path: Path = PROFILE) -> dict:
 
 
 def check_profile(profile: dict, attack: Attack) -> list[str]:
-    """Each group exists and is active in the bundle, and its source sentence is in the
-    group's ATT&CK description verbatim (links and citations removed)."""
+    """Each group exists and is active in the bundle; its ATT&CK sentence, when it has one,
+    is in the group's description verbatim (links and citations removed); and it carries
+    web evidence (status confirmed or weak, each source with publisher, URL, fetch date and
+    quote). It does not check that a quote is on the page: pages are not fetched here."""
     problems = []
     for g in profile["groups"]:
         group = attack.groups.get(g.id)
         if group is None:
             problems.append(f"{g.id}: not an active group in ATT&CK {attack.version}")
-        elif g.source_sentence not in group.description:
+        elif g.source_sentence is not None and g.source_sentence not in group.description:
             problems.append(f"{g.id}: source sentence not in its ATT&CK description")
+        ev = g.web_evidence or {}
+        if ev.get("status") not in EVIDENCE_OK:
+            problems.append(f"{g.id}: web evidence status {ev.get('status')!r}, "
+                            f"needs one of {sorted(EVIDENCE_OK)}")
+        if not ev.get("sources"):
+            problems.append(f"{g.id}: no web evidence source")
+        for src in ev.get("sources", []):
+            missing = [k for k in SOURCE_KEYS if not src.get(k)]
+            if missing:
+                problems.append(f"{g.id}: web source missing {', '.join(missing)}")
         if g.tier not in profile["tier_weights"]:
             problems.append(f"{g.id}: unknown tier {g.tier}")
     for e in profile.get("excluded", []):

@@ -32,7 +32,7 @@ A run writes `build/eval/<provider>-<time>/<case>.investigation.json` and `score
 | bn-e1-network-watcher-diagnostics | eval e1, runkey-standard-user | benign | ops-SOC judgment |
 | bn-e2-defender-run-key | eval e2, runkey-standard-user | benign | ops-SOC judgment |
 
-Benign basis (recorded in the runkey-standard-user dataset):
+Benign basis (recorded in the runkey-standard-user dataset; both labels approved by the owner on 2026-11-25):
 - **Network Watcher**: `NetworkWatcherAgent.exe` (Azure Network Watcher VM extension under
   `C:\Packages\Plugins\`) runs `netsh trace`; netsh starts `cscript gatherNetworkInfo.vbs`
   as the machine account, which runs `cmd /c reg export` of network and credential-provider

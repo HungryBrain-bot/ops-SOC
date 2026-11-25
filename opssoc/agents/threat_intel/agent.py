@@ -45,7 +45,7 @@ def brief_input(analysis: dict, top: int) -> dict:
     names = {g["id"]: g["name"] for g in analysis["groups"]}
     tiers = {g["id"]: g["tier"] for g in analysis["groups"]}
     return {
-        "profile_note": "curated profile of groups ATT&CK describes as targeting finance; "
+        "profile_note": "curated profile of groups that public reports show targeting finance; "
                         f"status {analysis['profile_status']}",
         "groups": [{"id": i, "name": names[i], "tier": tiers[i]} for i in names],
         "top_techniques": [{k: t[k] for k in ("id", "name", "tactics", "score", "groups",
@@ -132,8 +132,16 @@ def report_markdown(analysis: dict, brief: Brief | None = None) -> str:
     if missing:
         lines += ["", f"Named by ATT&CK but not in KEV: {', '.join(missing)}"]
     lines += ["", "## Groups", ""]
-    lines += [f"- {g['id']} {g['name']} ({g['tier']}): \"{g['source_sentence']}\""
-              for g in analysis["groups"]]
+    for g in analysis["groups"]:
+        ev = g.get("web_evidence") or {}
+        src = (ev.get("sources") or [{}])[0]
+        line = f"- {g['id']} {g['name']} ({g['tier']}, web evidence {ev.get('status', 'none')})"
+        if src:
+            line += (f": \"{src['quote']}\" ({src['publisher']}, {src['url']}, "
+                     f"fetched {src['fetched']})")
+        if g.get("source_sentence"):
+            line += f"; ATT&CK: \"{g['source_sentence']}\""
+        lines.append(line)
     lines += ["", "## What this does not say", "",
               "- Which groups target this organisation, or how likely an attack is.",
               "- Whether a covered rule is deployed and active for a customer "

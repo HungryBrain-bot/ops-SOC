@@ -29,10 +29,18 @@ OILRIG = ("The group has targeted a variety of sectors, including financial, gov
           "energy, chemical, and telecommunications.")
 
 
+WEB = {"status": "confirmed", "sources": [{"publisher": "P", "url": "https://example.org/r",
+                                           "fetched": "2026-11-25", "quote": "q"}]}
+
+
+def pg(gid, name, tier, sentence, web=WEB):
+    return finance.ProfileGroup(gid, name, tier, sentence, web)
+
+
 def profile(**over):
     p = {"status": "proposed", "tier_weights": {"primary": 2, "listed": 1},
-         "groups": [finance.ProfileGroup("G0080", "Cobalt Group", "primary", COBALT),
-                    finance.ProfileGroup("G0049", "OilRig", "listed", OILRIG)],
+         "groups": [pg("G0080", "Cobalt Group", "primary", COBALT),
+                    pg("G0049", "OilRig", "listed", OILRIG)],
          "excluded": [{"id": "G0032", "name": "Lazarus Group", "reason": "r"}]}
     p.update(over)
     return p
@@ -67,14 +75,29 @@ def test_attack_reader():
 
 def test_profile_check():
     assert finance.check_profile(profile(), ATTACK) == []
-    bad = profile(groups=[finance.ProfileGroup("G0080", "Cobalt", "primary", "made up"),
-                          finance.ProfileGroup("G9999", "X", "listed", "y"),
-                          finance.ProfileGroup("G0032", "Lazarus", "main", "z")])
+    bad = profile(groups=[pg("G0080", "Cobalt", "primary", "made up"),
+                          pg("G9999", "X", "listed", "y"),
+                          pg("G0032", "Lazarus", "main", "z")])
     problems = finance.check_profile(bad, ATTACK)
     assert "G0080: source sentence not in its ATT&CK description" in problems
     assert any(p.startswith("G9999: not an active group") for p in problems)
     assert "G0032: unknown tier main" in problems
     assert "G0032: both included and excluded" in problems
+
+
+def test_profile_check_web_evidence():
+    # A group chosen from web reporting alone has no ATT&CK sentence; that passes.
+    assert finance.check_profile(profile(groups=[pg("G0032", "Lazarus", "listed", None)],
+                                         excluded=[]), ATTACK) == []
+    bad = profile(groups=[
+        pg("G0080", "Cobalt", "primary", COBALT, web={}),
+        pg("G0049", "OilRig", "listed", OILRIG,
+           web={"status": "not_found", "sources": [{"publisher": "P", "url": "u"}]})])
+    problems = finance.check_profile(bad, ATTACK)
+    assert "G0080: web evidence status None, needs one of ['confirmed', 'weak']" in problems
+    assert "G0080: no web evidence source" in problems
+    assert "G0049: web evidence status 'not_found', needs one of ['confirmed', 'weak']" in problems
+    assert "G0049: web source missing fetched, quote" in problems
 
 
 def test_priorities_and_coverage():
@@ -159,3 +182,9 @@ def test_real_profile_file_shape():
     assert {g.tier for g in p["groups"]} == {"primary", "listed"}
     assert len({g.id for g in p["groups"]}) == 25
     assert all(e["reason"] for e in p["excluded"])
+    # Owner's rule (2026-11-25): every included group has a fetched web source.
+    assert all(g.web_evidence["status"] in {"confirmed", "weak"} and g.web_evidence["sources"]
+               for g in p["groups"])
+    assert {e["id"] for e in p["excluded"]} == {"G0048", "G1054", "G1009",
+                                                 "G0018", "G0053", "G0037"}
+    assert {"G0032", "G0085", "G1049"} <= {g.id for g in p["groups"]}
