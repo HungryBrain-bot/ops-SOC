@@ -32,7 +32,7 @@ def test_profile_sentences_are_in_attack(data):
 def test_analysis_counts(data):
     attack, kev = data
     result = finance.analyse(finance.load_profile(), attack, kev, None)
-    assert result["counts"] == {"groups": 25, "techniques": 269, "cves_named": 30,
-                                "cves_in_kev": 27, "kev_ransomware_known": 14}
+    assert result["counts"] == {"groups": 25, "techniques": 291, "cves_named": 31,
+                                "cves_in_kev": 28, "kev_ransomware_known": 15}
     top = [t["id"] for t in result["priority_techniques"][:5]]
-    assert top == ["T1588.002", "T1059.001", "T1566.001", "T1204.002", "T1105"]
+    assert top == ["T1059.001", "T1588.002", "T1566.001", "T1204.002", "T1105"]

@@ -56,3 +56,26 @@ gap list against detection_As_Code. Neither source links KEV entries to groups.
 - "Covered" means a DaC rule maps the technique, not that it is deployed, active for a
   customer, or detects every procedure of that technique.
 - No model has written a brief yet (no LLM spend in this PR).
+
+## Amendment (2026-11-25): web evidence for every profile group
+At the owner's request, a group's inclusion now rests on public reporting of its victims,
+not only on its ATT&CK description.
+- **Rule**: a group is included when a fetched public report (vendor research, government
+  advisory or indictment, or a news report of one) names financial-sector organisations
+  among its victims or targets. An ATT&CK sentence alone is not enough. The tier definitions
+  are unchanged.
+- **Record**: each group carries `web_evidence`: a status (`confirmed`, `weak`, `not_found`
+  or `not_finance`) and sources with publisher, URL, publication date, fetch date and a
+  quote. `check_profile` requires `confirmed` or `weak` and complete sources for every
+  included group. A group added from reporting may have no ATT&CK sentence; when it has
+  one, the sentence is still checked against the bundle.
+- **Result** (31 groups checked, 2026-11-25): 25 included (6 primary, 19 listed).
+  - Added: Lazarus Group, AppleJeus and FIN4.
+  - Removed: RTM (its victims are businesses that use remote banking), MirrorFace and
+    Moses Staff (no fetched report names a finance victim).
+  - Still excluded: admin@338, FIN5 and FIN6.
+  - APT41 is `weak`: finance appears only as a figure label in Mandiant's 2019 report.
+- **Limits**: quotes came through a fetch tool that summarises pages with a model, so they
+  are not checked byte-for-byte. Five sources are news reports of vendor research, not the
+  vendor's own page. Lazarus Group overlaps APT38 and Andariel in ATT&CK, so techniques
+  they share are counted for each. Status stays `proposed` until the owner signs it off.

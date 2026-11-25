@@ -24,7 +24,7 @@ Result on the pinned snapshots (2026-11-24): 25 groups, 269 techniques, 30 CVEs 
 ATT&CK for them, 27 in KEV (14 with known ransomware use). Top five techniques:
 T1588.002 Tool (resource development, outside SIEM telemetry), T1059.001 PowerShell
 (covered by DaC A1), T1566.001 Spearphishing Attachment, T1204.002 Malicious File, T1105
-Ingress Tool Transfer (covered by DaC A4). 21 of the top 25 have no rule.
+Ingress Tool Transfer (covered by DaC A4). 21 of the top 25 have no rule (unchanged after the 2026-11-25 profile revision; 291 techniques, 28 KEV CVEs).
 
 ## Why this method
 The sector judgment is in one reviewable file with a source sentence per group; every
@@ -41,4 +41,9 @@ groups, techniques or CVEs.
 - CISA advisories beyond KEV are not read (open question in ADR 001).
 - The profile is `proposed` until the owner reviews it; the 2 / 1 tier weights are a
   judgment.
+- Web evidence (ADR 008 amendment, 2026-11-25): every group names a fetched report of a
+  finance victim or target. The check tests that the record is complete (status, URL,
+  fetch date, quote); it does not refetch the page or check that the quote is on it. The
+  quotes came through a summarising fetch tool. A report that names a sector shows that the
+  group targeted it once, not how often or how recently.
 - The brief check catches unknown IDs and length, not wrong statements about known IDs.

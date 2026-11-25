@@ -240,7 +240,8 @@
       "expected_verdict": "benign",
       "label": {
         "kind": "ops-soc-judgment",
-        "basis": "Recorded parent chain in this dataset: NetworkWatcherAgent.exe (C:\\Packages\\Plugins\\Microsoft.Azure.NetworkWatcher.NetworkWatcherAgentWindows\\...) runs netsh trace; netsh starts cscript C:\\windows\\system32\\gatherNetworkInfo.vbs as WORKSTATION5$, which runs cmd /c reg export of network, wireless and credential-provider configuration into a config folder. Judged benign Azure VM network diagnostics collection; OTRF metadata describes only the Empire activity in this dataset. The exports run minutes from the Empire persistence activity on the same host, which makes the case harder."
+        "basis": "Recorded parent chain in this dataset: NetworkWatcherAgent.exe (C:\\Packages\\Plugins\\Microsoft.Azure.NetworkWatcher.NetworkWatcherAgentWindows\\...) runs netsh trace; netsh starts cscript C:\\windows\\system32\\gatherNetworkInfo.vbs as WORKSTATION5$, which runs cmd /c reg export of network, wireless and credential-provider configuration into a config folder. Judged benign Azure VM network diagnostics collection; OTRF metadata describes only the Empire activity in this dataset. The exports run minutes from the Empire persistence activity on the same host, which makes the case harder.",
+        "reviewed": "approved by the owner (Venu), 2026-11-25"
       },
       "key_facts": [
         "gatherNetworkInfo",
@@ -257,7 +258,8 @@
       "expected_verdict": "benign",
       "label": {
         "kind": "ops-soc-judgment",
-        "basis": "Recorded Sysmon event 13: C:\\Program Files\\Windows Defender\\MsMpEng.exe set the Run value WindowsDefender. Judged benign: the writer is the Defender engine in its install folder, which detection_As_Code A2 excludes for the same reason. OTRF metadata does not describe this event."
+        "basis": "Recorded Sysmon event 13: C:\\Program Files\\Windows Defender\\MsMpEng.exe set the Run value WindowsDefender. Judged benign: the writer is the Defender engine in its install folder, which detection_As_Code A2 excludes for the same reason. OTRF metadata does not describe this event.",
+        "reviewed": "approved by the owner (Venu), 2026-11-25"
       },
       "key_facts": [
         "MsMpEng.exe",

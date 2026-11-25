@@ -16,14 +16,22 @@ OPSSOC_DAC_PATH=<detection_As_Code checkout> python -m opssoc.agents.threat_inte
 `--brief` calls the LLM (spends money); the deterministic report is complete without it.
 
 ## Change the profile
-1. A group qualifies only if its ATT&CK description states it targeted the financial
-   sector, financial institutions, banks or banking systems, ATMs or SWIFT. "Financially
-   motivated" is not enough.
-2. Copy the sentence from the pinned bundle's description (links and citations removed by
-   `opssoc.intel.attack.plain`); `check_profile` must return no problems.
-3. A borderline group you leave out goes in `excluded` with the reason.
-4. Never add a group from memory or a news article: only from the pinned ATT&CK data.
-   Leave `status` as `proposed` until the owner signs it off.
+1. A group qualifies only if a fetched public report names financial-sector organisations
+   (banks, financial institutions, financial-services, investment or crypto-exchange
+   firms, ATMs, SWIFT) among its victims or targets (owner's rule, 2026-11-25). Being
+   "financially motivated", stealing cards at merchants, targeting finance policy bodies or
+   robbing other businesses' bank accounts is not enough.
+2. Search for the group's victims, then fetch the report itself. Prefer the vendor's or
+   agency's own page over news coverage; when only news coverage loads, say so in `note`.
+   Record `web_evidence`: status (`confirmed`, `weak` for a label-only mention), and
+   sources with publisher, URL, publication date, fetch date and a quote.
+3. If the group's ATT&CK description also names finance, copy that sentence from the
+   pinned bundle (links and citations removed by `opssoc.intel.attack.plain`); otherwise
+   leave `source_sentence` null. `check_profile` must return no problems.
+4. A group you leave out goes in `excluded` with the reason and its `web_evidence`
+   (`not_found` or `not_finance`).
+5. Never add a group or quote from memory. Leave `status` as `proposed` until the owner
+   signs it off.
 
 ## Bump a snapshot
 1. Download the new file at a commit, hash it, update URL, commit, version and SHA-256 in

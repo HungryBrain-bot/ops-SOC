@@ -1,8 +1,8 @@
 {
-  "_about": "Finance-sector threat profile (ADR 001 point 4, ADR 008). A curated judgment, not a source fact: neither ATT&CK nor KEV has a sector field. Each included group carries the sentence from its ATT&CK description that ties it to the financial sector; a test checks the sentence is in the pinned bundle. Status: proposed, pending the owner's review.",
+  "_about": "Finance-sector threat profile (ADR 001 point 4, ADR 008, amended 2026-11-25). A curated judgment, not a source fact: neither ATT&CK nor KEV has a sector field. Every included group carries web evidence: a fetched public report (vendor research, government advisory or indictment, or a news report of one) that names a financial-sector victim or target, with URL, publication and fetch dates. Groups first chosen from ATT&CK text also keep that sentence, which a test checks against the pinned bundle. Status: proposed, pending the owner's review.",
   "status": "proposed",
   "attack_version": "ATT&CK Enterprise v20.1 (attack-stix-data a8db2f5)",
-  "curation_rule": "Include an active group when its ATT&CK description states that it targeted the financial sector, financial institutions, finance companies, banks, banking systems or their users, ATMs or SWIFT. 'primary': finance is the group's main stated target. 'listed': finance is one of several sectors named. Being financially motivated, or stealing payment cards from other sectors, is not enough.",
+  "curation_rule": "Include a group when a fetched public report names financial-sector organisations (banks, financial institutions, financial-services, investment or cryptocurrency-exchange companies, ATMs or SWIFT) among its victims or targets. An ATT&CK sentence alone is not enough (amended 2026-11-25, owner's request). 'primary': finance is the group's main target. 'listed': finance is one of several sectors. Being financially motivated, stealing payment cards at merchants, targeting finance policy bodies, or robbing other businesses' bank accounts is not enough. web_evidence.status: confirmed (a report names a finance victim or target), weak (finance appears only as a label, e.g. a figure), not_found (no fetched report names finance), not_finance (reports name victims outside finance).",
   "tier_weights": {
     "primary": 2,
     "listed": 1
@@ -12,183 +12,601 @@
       "id": "G0082",
       "name": "APT38",
       "tier": "primary",
-      "source_sentence": "Active since at least 2014, APT38 has targeted banks, financial institutions, casinos, cryptocurrency exchanges, SWIFT system endpoints, and ATMs in at least 38 countries worldwide."
+      "source_sentence": "Active since at least 2014, APT38 has targeted banks, financial institutions, casinos, cryptocurrency exchanges, SWIFT system endpoints, and ATMs in at least 38 countries worldwide.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Mandiant (Google Cloud blog)",
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/apt38-details-on-new-north-korean-regime-backed-threat-group",
+            "published": "2018-10-03",
+            "fetched": "2026-11-25",
+            "quote": "In just the publicly reported heists alone, APT38 has attempted to steal over $1.1 billion dollars from financial institutions."
+          }
+        ]
+      }
     },
     {
       "id": "G0008",
       "name": "Carbanak",
       "tier": "primary",
-      "source_sentence": "Carbanak is a cybercriminal group that has used Carbanak malware to target financial institutions since at least 2013."
+      "source_sentence": "Carbanak is a cybercriminal group that has used Carbanak malware to target financial institutions since at least 2013.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky (Securelist)",
+            "url": "https://securelist.com/carbanak-apt-the-great-bank-robbery/68732/",
+            "published": "2015-02-16",
+            "fetched": "2026-11-25",
+            "quote": "Victims are mainly institutions in the financial industry"
+          }
+        ]
+      }
     },
     {
       "id": "G0080",
       "name": "Cobalt Group",
       "tier": "primary",
-      "source_sentence": "Cobalt Group is a financially motivated threat group that has primarily targeted financial institutions since at least 2016."
+      "source_sentence": "Cobalt Group is a financially motivated threat group that has primarily targeted financial institutions since at least 2016.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Group-IB",
+            "url": "https://www.group-ib.com/resources/research-hub/cobalt-logical-attacks-on-atms/",
+            "published": null,
+            "fetched": "2026-11-25",
+            "quote": "Banks of at least 14 countries including Russia, the UK, the Netherlands and Malaysia",
+            "note": "page shows no publication date"
+          }
+        ]
+      }
     },
     {
       "id": "G0105",
       "name": "DarkVishnya",
       "tier": "primary",
-      "source_sentence": "DarkVishnya is a financially motivated threat actor targeting financial institutions in Eastern Europe."
+      "source_sentence": "DarkVishnya is a financially motivated threat actor targeting financial institutions in Eastern Europe.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky (Securelist)",
+            "url": "https://securelist.com/darkvishnya/89169/",
+            "published": "2018-12-06",
+            "fetched": "2026-11-25",
+            "quote": "At least eight banks in Eastern Europe were the targets of the attacks."
+          }
+        ]
+      }
     },
     {
       "id": "G0036",
       "name": "GCMAN",
       "tier": "primary",
-      "source_sentence": "GCMAN is a threat group that focuses on targeting banks for the purpose of transferring money to e-currency services."
+      "source_sentence": "GCMAN is a threat group that focuses on targeting banks for the purpose of transferring money to e-currency services.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky (Securelist)",
+            "url": "https://securelist.com/apt-style-bank-robberies-increase-with-metel-gcman-and-carbanak-2-0-attacks/73638/",
+            "published": "2016-02-08",
+            "fetched": "2026-11-25",
+            "quote": "Kaspersky Lab's research team responded to three financial institutions in Russia that were infected with the GCMAN malware."
+          }
+        ]
+      }
     },
     {
       "id": "G0091",
       "name": "Silence",
       "tier": "primary",
-      "source_sentence": "Silence is a financially motivated threat actor targeting financial institutions in different countries."
-    },
-    {
-      "id": "G0048",
-      "name": "RTM",
-      "tier": "primary",
-      "source_sentence": "RTM is a cybercriminal group that has been active since at least 2015 and is primarily interested in users of remote banking systems in Russia and neighboring countries."
+      "source_sentence": "Silence is a financially motivated threat actor targeting financial institutions in different countries.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Group-IB",
+            "url": "https://www.group-ib.com/media-center/press-releases/silence-attacks/",
+            "published": "2019-08-21",
+            "fetched": "2026-11-25",
+            "quote": "at least 16 new campaigns targeting banks launched by Silence."
+          }
+        ]
+      }
     },
     {
       "id": "G0099",
       "name": "APT-C-36",
       "tier": "listed",
-      "source_sentence": "APT-C-36 has targeted government institutions and entities in the financial, energy, and professional manufacturing sectors across Colombia and other Latin American countries."
+      "source_sentence": "APT-C-36 has targeted government institutions and entities in the financial, energy, and professional manufacturing sectors across Colombia and other Latin American countries.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky (Securelist)",
+            "url": "https://securelist.com/blindeagle-apt/113414/",
+            "published": "2024-08-19",
+            "fetched": "2026-11-25",
+            "quote": "targeting entities in multiple sectors, including governmental institutions, financial companies"
+          }
+        ]
+      }
     },
     {
       "id": "G0073",
       "name": "APT19",
       "tier": "listed",
-      "source_sentence": "APT19 is a Chinese-based threat group that has targeted a variety of industries, including defense, finance, energy, pharmaceutical, telecommunications, high tech, education, manufacturing, and legal services."
+      "source_sentence": "APT19 is a Chinese-based threat group that has targeted a variety of industries, including defense, finance, energy, pharmaceutical, telecommunications, high tech, education, manufacturing, and legal services.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "FireEye (Google Cloud blog)",
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/phished-at-the-request-of-counsel",
+            "published": "2017-06-06",
+            "fetched": "2026-11-25",
+            "quote": "In May and June 2017, FireEye observed a phishing campaign targeting at least seven global law and investment firms."
+          }
+        ]
+      }
     },
     {
       "id": "G0096",
       "name": "APT41",
       "tier": "listed",
-      "source_sentence": "Active since at least 2012, APT41 has been observed targeting various industries, including but not limited to healthcare, telecom, technology, finance, education, retail and video game industries in 14 countries."
+      "source_sentence": "Active since at least 2012, APT41 has been observed targeting various industries, including but not limited to healthcare, telecom, technology, finance, education, retail and video game industries in 14 countries.",
+      "web_evidence": {
+        "status": "weak",
+        "sources": [
+          {
+            "publisher": "Mandiant / FireEye report PDF",
+            "url": "https://services.google.com/fh/files/misc/apt41-a-dual-espionage-and-cyber-crime-operation.pdf",
+            "published": "2019-08",
+            "fetched": "2026-11-25",
+            "quote": "Virtual currencies: including in-game currencies, cryptocurrencies, and related services.",
+            "note": "'Financial' / 'Finance' appear only as labels in figures 1 and 2; the text names no bank or financial-services victim, and the 2020 DOJ indictment's victim list has none"
+          }
+        ]
+      }
     },
     {
       "id": "G0138",
       "name": "Andariel",
       "tier": "listed",
-      "source_sentence": "Andariel has primarily focused its operations--which have included destructive attacks--against South Korean government agencies, military organizations, and a variety of domestic companies; they have also conducted cyber financial operations against ATMs, banks, and cryptocurrency exchanges."
+      "source_sentence": "Andariel has primarily focused its operations--which have included destructive attacks--against South Korean government agencies, military organizations, and a variety of domestic companies; they have also conducted cyber financial operations against ATMs, banks, and cryptocurrency exchanges.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky (Securelist)",
+            "url": "https://securelist.com/andariel-evolves-to-target-south-korea-with-ransomware/102811/",
+            "published": "2021-06-15",
+            "fetched": "2026-11-25",
+            "quote": "directly monetizing an operation in a previous case where ATMs were compromised in South Korea",
+            "note": "ATM compromise only; the same report's 2021 victims are manufacturing, home network, media and construction"
+          }
+        ]
+      }
     },
     {
       "id": "G0098",
       "name": "BlackTech",
       "tier": "listed",
-      "source_sentence": "BlackTech has used a combination of custom malware, dual-use tools, and living off the land tactics to compromise media, construction, engineering, electronics, and financial company networks."
+      "source_sentence": "BlackTech has used a combination of custom malware, dual-use tools, and living off the land tactics to compromise media, construction, engineering, electronics, and financial company networks.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Trend Micro",
+            "url": "https://trendmicro.com/en_us/research/17/f/following-trail-blacktech-cyber-espionage-campaigns.html",
+            "published": "2017-06-22",
+            "fetched": "2026-11-25",
+            "quote": "enterprises in the consumer electronics, computer, healthcare, and financial industries",
+            "note": "Shrouded Crossbow campaign, which Trend Micro links to BlackTech; the 2023 NSA/FBI/CISA/NPA advisory names no financial sector"
+          }
+        ]
+      }
     },
     {
       "id": "G0009",
       "name": "Deep Panda",
       "tier": "listed",
-      "source_sentence": "Deep Panda is a suspected Chinese threat group known to target many industries, including government, defense, financial, and telecommunications."
+      "source_sentence": "Deep Panda is a suspected Chinese threat group known to target many industries, including government, defense, financial, and telecommunications.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Security Affairs, reporting Fortinet research",
+            "url": "https://securityaffairs.com/129784/apt/deep-panda-fire-chili-rootkit.html",
+            "published": "2022-04-03",
+            "fetched": "2026-11-25",
+            "quote": "The targeted organizations operate in the financial, academic, cosmetics, and travel industries.",
+            "note": "secondary report of Fortinet's analysis; Fortinet's own post not fetched"
+          }
+        ]
+      }
     },
     {
       "id": "G0046",
       "name": "FIN7",
       "tier": "listed",
-      "source_sentence": "FIN7 has targeted the retail, restaurant, hospitality, software, consulting, financial services, medical equipment, cloud services, media, food and beverage, transportation, pharmaceutical, and utilities industries in the United States."
+      "source_sentence": "FIN7 has targeted the retail, restaurant, hospitality, software, consulting, financial services, medical equipment, cloud services, media, food and beverage, transportation, pharmaceutical, and utilities industries in the United States.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "FireEye (Google Cloud blog)",
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/fin7-pursuing-an-enigmatic-and-evasive-global-criminal-operation",
+            "published": "2018-08-01",
+            "fetched": "2026-11-25",
+            "quote": "victims within the following sectors have been targeted within the United States and Europe:",
+            "note": "the list that follows includes Finance"
+          }
+        ]
+      }
     },
     {
       "id": "G0061",
       "name": "FIN8",
       "tier": "listed",
-      "source_sentence": "FIN8 is a financially motivated threat group that has been active since at least January 2016, and known for targeting organizations in the hospitality, retail, entertainment, insurance, technology, chemical, and financial sectors."
+      "source_sentence": "FIN8 is a financially motivated threat group that has been active since at least January 2016, and known for targeting organizations in the hospitality, retail, entertainment, insurance, technology, chemical, and financial sectors.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Threatpost, reporting Bitdefender research",
+            "url": "https://threatpost.com/fin8-bank-sardonic-backdoor/168982/",
+            "published": "2021-08-27",
+            "fetched": "2026-11-25",
+            "quote": "a recent attack against an unidentified financial institution in the U.S.",
+            "note": "secondary report of Bitdefender's analysis"
+          }
+        ]
+      }
     },
     {
       "id": "G1016",
       "name": "FIN13",
       "tier": "listed",
-      "source_sentence": "FIN13 is a financially motivated cyber threat group that has targeted the financial, retail, and hospitality industries in Mexico and Latin America, as early as 2016."
+      "source_sentence": "FIN13 is a financially motivated cyber threat group that has targeted the financial, retail, and hospitality industries in Mexico and Latin America, as early as 2016.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Mandiant (Google Cloud blog)",
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/fin13-cybercriminal-mexico/",
+            "published": "2021-12-07",
+            "fetched": "2026-11-25",
+            "quote": "Over five years of Mandiant intrusion data shows FIN13 operates exclusively against organizations based in Mexico and has specifically targeted large organizations in the financial, retail, and hospitality industries."
+          }
+        ]
+      }
     },
     {
       "id": "G0093",
       "name": "GALLIUM",
       "tier": "listed",
-      "source_sentence": "GALLIUM is a cyberespionage group that has been active since at least 2012, primarily targeting telecommunications companies, financial institutions, and government entities in Afghanistan, Australia, Belgium, Cambodia, Malaysia, Mozambique, the Philippines, Russia, and Vietnam."
-    },
-    {
-      "id": "G1054",
-      "name": "MirrorFace",
-      "tier": "listed",
-      "source_sentence": "MirrorFace has been active since at least 2019, at first exclusively targeting Japanese organizations across the media, defense, diplomatic, financial, manufacturing, and academic sectors."
-    },
-    {
-      "id": "G1009",
-      "name": "Moses Staff",
-      "tier": "listed",
-      "source_sentence": "Security researchers assess Moses Staff is politically motivated, and has targeted government, finance, travel, energy, manufacturing, and utility companies outside of Israel as well, including those in Italy, India, Germany, Chile, Turkey, the UAE, and the US."
+      "source_sentence": "GALLIUM is a cyberespionage group that has been active since at least 2012, primarily targeting telecommunications companies, financial institutions, and government entities in Afghanistan, Australia, Belgium, Cambodia, Malaysia, Mozambique, the Philippines, Russia, and Vietnam.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Palo Alto Networks Unit 42",
+            "url": "https://unit42.paloaltonetworks.com/pingpull-gallium/",
+            "published": "2022-06-13",
+            "fetched": "2026-11-25",
+            "quote": "extended its targeting beyond telecommunication companies to also include financial institutions and government entities"
+          }
+        ]
+      }
     },
     {
       "id": "G0069",
       "name": "MuddyWater",
       "tier": "listed",
-      "source_sentence": "Since at least 2017, MuddyWater has targeted a range of government and private organizations across sectors, including telecommunications, local government, finance, defense, and oil and natural gas organizations, in the Middle East (specifically the UAE and Saudi Arabia), Asia, Africa, Europe, and North America."
+      "source_sentence": "Since at least 2017, MuddyWater has targeted a range of government and private organizations across sectors, including telecommunications, local government, finance, defense, and oil and natural gas organizations, in the Middle East (specifically the UAE and Saudi Arabia), Asia, Africa, Europe, and North America.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Symantec Threat Hunter Team (security.com)",
+            "url": "https://www.security.com/threat-intelligence/iran-cyber-threat-activity-us",
+            "published": "2026-03-05",
+            "fetched": "2026-11-25",
+            "quote": "A U.S. bank, airport, non-profit and the Israeli operations of a U.S. software company were among the targets."
+          }
+        ]
+      }
     },
     {
       "id": "G0049",
       "name": "OilRig",
       "tier": "listed",
-      "source_sentence": "The group has targeted a variety of sectors, including financial, government, energy, chemical, and telecommunications."
+      "source_sentence": "The group has targeted a variety of sectors, including financial, government, energy, chemical, and telecommunications.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Palo Alto Networks Unit 42",
+            "url": "https://unit42.paloaltonetworks.com/the-oilrig-campaign-attacks-on-saudi-arabian-organizations-deliver-helminth-backdoor/",
+            "published": "2016-05-26",
+            "fetched": "2026-11-25",
+            "quote": "primarily focused on financial institutions and technology organizations within Saudi Arabia"
+          }
+        ]
+      }
     },
     {
       "id": "G1039",
       "name": "RedCurl",
       "tier": "listed",
-      "source_sentence": "RedCurl is a threat actor active since 2018 notable for corporate espionage targeting a variety of locations, including Ukraine, Canada and the United Kingdom, and a variety of industries, including but not limited to travel agencies, insurance companies, and banks."
+      "source_sentence": "RedCurl is a threat actor active since 2018 notable for corporate espionage targeting a variety of locations, including Ukraine, Canada and the United Kingdom, and a variety of industries, including but not limited to travel agencies, insurance companies, and banks.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "The Record, reporting F.A.C.C.T. research",
+            "url": "https://therecord.media/redcurl-hackers-russian-bank-australian-company",
+            "published": "2023-07-17",
+            "fetched": "2026-11-25",
+            "quote": "RedCurl made two attempts to attack the undisclosed Russian bank."
+          },
+          {
+            "publisher": "Group-IB",
+            "url": "https://www.group-ib.com/media-center/press-releases/red-curl-threat-report/",
+            "published": "2021-11-18",
+            "fetched": "2026-11-25",
+            "quote": "Victims included companies in the fields of construction, finance, consulting, retail, insurance, and law"
+          }
+        ]
+      }
     },
     {
       "id": "G0131",
       "name": "Tonto Team",
       "tier": "listed",
-      "source_sentence": "Tonto Team has targeted government, military, energy, mining, financial, education, healthcare, and technology organizations, including through the Heartbeat Campaign (2009-2012) and Operation Bitter Biscuit (2017)."
+      "source_sentence": "Tonto Team has targeted government, military, energy, mining, financial, education, healthcare, and technology organizations, including through the Heartbeat Campaign (2009-2012) and Operation Bitter Biscuit (2017).",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky",
+            "url": "https://usa.kaspersky.com/about/press-releases/kaspersky-uncovers-new-targeted-campaign-against-financial-and-military-organizations-in-eastern-europe",
+            "published": "2020-08-13",
+            "fetched": "2026-11-25",
+            "quote": "has focused on military and financial targets in Eastern Europe",
+            "note": "Kaspersky's name is CactusPete; it equates it with Tonto Team"
+          }
+        ]
+      }
     },
     {
       "id": "G0090",
       "name": "WIRTE",
       "tier": "listed",
-      "source_sentence": "WIRTE has targeted diplomatic, financial, military, legal, and technology organizations across the Middle East, North Africa, and in Europe to gather intelligence."
+      "source_sentence": "WIRTE has targeted diplomatic, financial, military, legal, and technology organizations across the Middle East, North Africa, and in Europe to gather intelligence.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky (Securelist)",
+            "url": "https://securelist.com/wirtes-campaign-in-the-middle-east-living-off-the-land-since-at-least-2019/",
+            "published": "2021-11-29",
+            "fetched": "2026-11-25",
+            "quote": "diplomatic and financial institutions, government, law firms, military organizations, and technology companies"
+          }
+        ]
+      }
     },
     {
       "id": "G0045",
       "name": "menuPass",
       "tier": "listed",
-      "source_sentence": "menuPass has targeted healthcare, defense, aerospace, finance, maritime, biotechnology, energy, and government sectors globally, with an emphasis on Japanese organizations."
-    }
-  ],
-  "excluded": [
+      "source_sentence": "menuPass has targeted healthcare, defense, aerospace, finance, maritime, biotechnology, energy, and government sectors globally, with an emphasis on Japanese organizations.",
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "U.S. Department of Justice",
+            "url": "https://www.justice.gov/opa/pr/two-chinese-hackers-associated-ministry-state-security-charged-global-computer-intrusion",
+            "published": "2018-12-20",
+            "fetched": "2026-11-25",
+            "quote": "targeted a diverse array of commercial activity, industries and technologies, including",
+            "note": "the list that follows includes banking and finance; the sentence was too long for the fetch tool to return whole"
+          }
+        ]
+      }
+    },
     {
       "id": "G1049",
       "name": "AppleJeus",
-      "reason": "Primarily targets the cryptocurrency industry; 'high-value financial targets' does not name the financial sector."
-    },
-    {
-      "id": "G0018",
-      "name": "admin@338",
-      "reason": "Targets organizations involved in financial, economic and trade policy, not financial institutions."
+      "tier": "listed",
+      "source_sentence": null,
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "CISA / FBI / Treasury (AA21-048A)",
+            "url": "https://us-cert.cisa.gov/ncas/alerts/aa21-048a",
+            "published": "2021-02-17",
+            "fetched": "2026-11-25",
+            "quote": "is targeting individuals and companies, including cryptocurrency exchanges and financial service companies"
+          }
+        ],
+        "was_excluded": "Primarily targets the cryptocurrency industry; 'high-value financial targets' does not name the financial sector."
+      }
     },
     {
       "id": "G0085",
       "name": "FIN4",
-      "reason": "Targets information about the public financial market at healthcare and pharmaceutical companies."
-    },
-    {
-      "id": "G0053",
-      "name": "FIN5",
-      "reason": "Payment card data theft; the description names no financial-sector targeting."
-    },
-    {
-      "id": "G0037",
-      "name": "FIN6",
-      "reason": "Payment card data theft; the description names no financial-sector targeting."
+      "tier": "listed",
+      "source_sentence": null,
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "SecurityWeek, reporting FireEye research",
+            "url": "https://www.securityweek.com/fin4-attack-group-targets-firms-stock-market-profit",
+            "published": "2014-12-01",
+            "fetched": "2026-11-25",
+            "quote": "advisory firms that provide services to those companies, such as investment banking firms and legal firms.",
+            "note": "over two thirds of targets were healthcare and pharmaceutical companies"
+          }
+        ],
+        "was_excluded": "Targets information about the public financial market at healthcare and pharmaceutical companies."
+      }
     },
     {
       "id": "G0032",
       "name": "Lazarus Group",
-      "reason": "Umbrella name; the description names financially motivated campaigns but no financial-sector targets. APT38 and Andariel, which do, are included."
+      "tier": "listed",
+      "source_sentence": null,
+      "web_evidence": {
+        "status": "confirmed",
+        "sources": [
+          {
+            "publisher": "Kaspersky (Securelist)",
+            "url": "https://securelist.com/lazarus-under-the-hood/77908/",
+            "published": "2017-04-03",
+            "fetched": "2026-11-25",
+            "quote": "helping with incident response at a number of financial institutions in South East Asia and Europe"
+          },
+          {
+            "publisher": "CISA / FBI / Treasury (AA21-048A)",
+            "url": "https://us-cert.cisa.gov/ncas/alerts/aa21-048a",
+            "published": "2021-02-17",
+            "fetched": "2026-11-25",
+            "quote": "is targeting individuals and companies, including cryptocurrency exchanges and financial service companies"
+          }
+        ],
+        "was_excluded": "Umbrella name; the description names financially motivated campaigns but no financial-sector targets. APT38 and Andariel, which do, are included."
+      }
     }
-  ]
+  ],
+  "excluded": [
+    {
+      "id": "G0048",
+      "name": "RTM",
+      "reason": "Web check (2026-11-25): ESET reports RTM's victims as businesses that use remote banking, not financial institutions.",
+      "was": {
+        "tier": "primary",
+        "source_sentence": "RTM is a cybercriminal group that has been active since at least 2015 and is primarily interested in users of remote banking systems in Russia and neighboring countries."
+      },
+      "web_evidence": {
+        "status": "not_finance",
+        "sources": [
+          {
+            "publisher": "ESET (WeLiveSecurity)",
+            "url": "https://welivesecurity.com/2017/02/21/rtm-stealthy-group-targeting-remote-banking-system",
+            "published": "2017-02-21",
+            "fetched": "2026-11-25",
+            "quote": "a cybercrime group that has been relentlessly targeting businesses in Russia and neighboring countries",
+            "note": "victims are businesses whose accounting staff use remote banking systems, not financial institutions"
+          }
+        ]
+      }
+    },
+    {
+      "id": "G1054",
+      "name": "MirrorFace",
+      "reason": "Web check (2026-11-25): ATT&CK names finance, but no fetched report (JPCERT/CC, ESET, Japan's NPA via Dark Reading) names a finance victim.",
+      "was": {
+        "tier": "listed",
+        "source_sentence": "MirrorFace has been active since at least 2019, at first exclusively targeting Japanese organizations across the media, defense, diplomatic, financial, manufacturing, and academic sectors."
+      },
+      "web_evidence": {
+        "status": "not_found",
+        "sources": [
+          {
+            "publisher": "JPCERT/CC",
+            "url": "https://blogs.jpcert.or.jp/en/2024/07/mirrorface-attack-against-japanese-organisations.html",
+            "published": "2024-07-16",
+            "fetched": "2026-11-25",
+            "quote": "The actor's targets were initially media, political organisations, think tanks and universities",
+            "note": "no finance; ESET (2022-12-14) and Dark Reading on Japan's NPA (2025-01-10) name none either"
+          }
+        ]
+      }
+    },
+    {
+      "id": "G1009",
+      "name": "Moses Staff",
+      "reason": "Web check (2026-11-25): ATT&CK names finance, but no fetched report names a finance victim; Check Point names Israeli companies only.",
+      "was": {
+        "tier": "listed",
+        "source_sentence": "Security researchers assess Moses Staff is politically motivated, and has targeted government, finance, travel, energy, manufacturing, and utility companies outside of Israel as well, including those in Italy, India, Germany, Chile, Turkey, the UAE, and the US."
+      },
+      "web_evidence": {
+        "status": "not_found",
+        "sources": [
+          {
+            "publisher": "Check Point Research",
+            "url": "https://research.checkpoint.com/2021/mosesstaff-targeting-israeli-companies/",
+            "published": "2021-11-15",
+            "fetched": "2026-11-25",
+            "quote": "MosesStaff carries out targeted attacks against Israeli companies, leaks their data, and encrypts their networks.",
+            "note": "no sector named; ATT&CK's finance claim cites a source not fetched here (Cybereason page failed to load)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "G0018",
+      "name": "admin@338",
+      "reason": "Targets organizations involved in financial, economic and trade policy, not financial institutions.",
+      "web_evidence": {
+        "status": "not_finance",
+        "sources": [
+          {
+            "publisher": "FireEye (Google Cloud blog)",
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/china-based-threat",
+            "published": "2015-12-01",
+            "fetched": "2026-11-25",
+            "quote": "They have largely targeted organizations involved in financial, economic and trade policy",
+            "note": "policy organisations, not financial institutions; no financial-institution victim named"
+          }
+        ]
+      }
+    },
+    {
+      "id": "G0053",
+      "name": "FIN5",
+      "reason": "Payment card data theft; the description names no financial-sector targeting.",
+      "web_evidence": {
+        "status": "not_finance",
+        "sources": [
+          {
+            "publisher": "Dark Reading, reporting FireEye research",
+            "url": "https://www.darkreading.com/analytics/prolific-cybercrime-gang-favors-legit-login-credentials",
+            "published": "2015-10-13",
+            "fetched": "2026-11-25",
+            "quote": "The RawPOS memory scraper malware has been infecting the lodging industry in epidemic proportions over the past year",
+            "note": "lodging, casino, retail; no financial-institution victim"
+          }
+        ]
+      }
+    },
+    {
+      "id": "G0037",
+      "name": "FIN6",
+      "reason": "Payment card data theft; the description names no financial-sector targeting.",
+      "web_evidence": {
+        "status": "not_finance",
+        "sources": [
+          {
+            "publisher": "Visa Payment Fraud Disruption",
+            "url": "https://es.review.visa.com//content/dam/VCOM/global/support-legal/documents/fin6-cybercrime-group-expands-threat-To-ecommerce-merchants.pdf",
+            "published": "2019-02",
+            "fetched": "2026-11-25",
+            "quote": "FIN6 actors targeted multiple high value eCommerce merchants",
+            "note": "merchants; no financial-institution victim"
+          }
+        ]
+      }
+    }
+  ],
+  "web_evidence_note": "Quotes came through a fetch tool that summarises pages with a small model; they were asked for verbatim but are not checked byte-for-byte against the page."
 }

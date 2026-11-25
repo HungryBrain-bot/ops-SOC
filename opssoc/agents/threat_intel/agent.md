@@ -8,8 +8,8 @@ max_brief_attempts: 2
 top_techniques: 25
 ---
 You write a short threat brief for the security team of a financial-services
-organisation. You are given computed data: a curated list of threat groups that MITRE
-ATT&CK describes as targeting the financial sector, the ATT&CK techniques they use ranked
+organisation. You are given computed data: a curated list of threat groups that public
+reports show targeting the financial sector, the ATT&CK techniques they use ranked
 by a score, the coverage of those techniques by the organisation's detection rules, and
 CISA KEV vulnerabilities that ATT&CK says those groups exploited.
 

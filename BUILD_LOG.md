@@ -161,3 +161,29 @@
 - Brief: writing-tier model text from the computed data, IDs checked; not
   run (no LLM spend).
 - Verified locally: 97 passed, 8 skipped; ruff clean.
+
+## 2026-11-25 - Finance profile checked against public reporting; benign labels approved
+- Owner approved both benign eval labels (bn-e1-network-watcher-diagnostics,
+  bn-e2-defender-run-key); `ground_truth.json` records it under `label.reviewed`.
+- Owner asked that each finance group be checked against reporting of its real victims,
+  not only its ATT&CK text. I checked all 31 groups (25 included, 6 excluded) by web
+  search and fetched one or two reports per group (fetched 2026-11-25). Sources are in
+  `intel/finance_profile.json` under `web_evidence`. The rule is in the ADR 008 amendment.
+- Added: Lazarus Group (Kaspersky 2017: financial institutions in South East Asia and
+  Europe; CISA AA21-048A), AppleJeus (CISA AA21-048A: cryptocurrency exchanges and
+  financial service companies) and FIN4 (FireEye via SecurityWeek: investment banking
+  firms).
+- Removed: RTM (ESET: businesses that use remote banking, not financial institutions; was
+  primary), MirrorFace (JPCERT/CC, ESET and Japan's NPA name no finance victim) and Moses
+  Staff (Check Point names Israeli companies only; the Cybereason page did not load).
+- Still excluded, confirmed by reporting: admin@338 (finance policy bodies), FIN5 (lodging
+  and casinos), FIN6 (e-commerce merchants).
+- APT41 is kept as `weak`: Mandiant's 2019 report labels "Financial" only in figures, and
+  the 2020 DOJ victim list has no bank. BlackTech rests on Trend Micro's Shrouded Crossbow
+  attribution; the 2023 joint advisory names no finance. Andariel rests on ATM compromise.
+- Result: 25 groups (6 primary, 19 listed); 291 techniques; top five T1059.001,
+  T1588.002, T1566.001, T1204.002, T1105; 21 of the top 25 have no DaC rule; 31 CVEs named,
+  28 in KEV, 15 with known ransomware use.
+- Not verified: quotes came through a fetch tool that summarises pages, so they are not
+  checked byte-for-byte; five sources are news reports of vendor research. Status stays
+  `proposed`.
