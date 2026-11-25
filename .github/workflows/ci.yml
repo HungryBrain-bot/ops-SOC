@@ -73,3 +73,33 @@ jobs:
           name: replay-alerts
           path: data/replay/alerts.json
           if-no-files-found: ignore
+
+  intel:
+    # Threat intel on the pinned ATT&CK and KEV snapshots: profile sentences checked against
+    # ATT&CK, the finance analysis, and coverage against the pinned detection_As_Code rules.
+    # No LLM call.
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      OPSSOC_DAC_PATH: ${{ github.workspace }}/.dac
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: HungryBrain-bot/detection_As_Code
+          ref: 51080aa733242325215be64f75a83926c4ac35ef
+          path: .dac
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,seed]"
+      - name: Fetch ATT&CK and KEV snapshots (pinned by SHA-256)
+        run: python -m opssoc.agents.threat_intel fetch
+      - name: Snapshot tests
+        run: python -m pytest -q tests/test_intel_snapshots.py
+      - name: Finance priorities and coverage
+        run: python -m opssoc.agents.threat_intel analyse
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finance-priorities
+          path: build/intel/

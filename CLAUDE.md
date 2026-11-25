@@ -11,7 +11,8 @@ and tested here, on recorded OTRF data in the Kusto emulator.
 Architecture: docs/decisions/001-architecture.md (ADR 001). SOAR writer:
 docs/decisions/002-soar-writer.md (ADR 002). Connectors and replay:
 docs/decisions/003-connectors-and-replay.md (ADR 003). Replay alerts: ADR 004.
-LLM layer: ADR 005. Investigation agent: ADR 006. Eval harness: ADR 007.
+LLM layer: ADR 005. Investigation agent: ADR 006. Eval harness: ADR 007. Threat intel (finance):
+ADR 008.
 
 Before adding an agent, connector, data source or write path beyond Scope,
 check the request is explicit from the owner (Venu).
@@ -76,16 +77,21 @@ server for each target.
   verdict checks, budgets, case report.
 - `tests/test_eval.py` - ground truth integrity, case matching, scoring
   (records written in the test, not model output).
+- `tests/test_threat_intel.py` - ATT&CK / KEV readers, profile checks,
+  priorities, coverage, KEV links, brief ID checks (recorded extracts of the
+  pinned snapshots).
+- `tests/test_intel_snapshots.py` - profile and counts on the real pinned
+  snapshots; skipped unless fetched (CI job `intel`).
 - `tests/test_replay_engine.py` - replay in the real Kusto emulator, incl.
   the 7 DaC alerts, the 5 eval-rule alerts, full ground-truth coverage, key
   facts in the data, and the agent's query tool; skipped unless OPSSOC_KUSTO_URL is set (CI job
   `replay-kusto`, which checks out detection_As_Code at the pinned commit).
 
-Last run (2026-11-24, eval harness): 82 passed, 8 skipped (engine tests,
-run in CI); ruff clean.
+Last run (2026-11-24, threat intel): 97 passed, 8 skipped (engine tests,
+run in CI; snapshot tests ran locally); ruff clean.
 
 Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
-`investigation-agent`, `llm-providers`, `eval-harness`. Agent definitions (prompt + budgets):
+`investigation-agent`, `llm-providers`, `eval-harness`, `threat-intel`. Agent definitions (prompt + budgets):
 `opssoc/agents/<agent>/agent.md`.
 
 ## Current status
@@ -120,7 +126,13 @@ Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
   benign labelled by this project from recorded parent chains), eval rules
   (loosened DaC rules, never deployed), deterministic scoring, `run` needs
   `--yes` to spend. Not run with a real model yet.
-- Next: threat intel agent.
+- Built: threat intel agent, finance (ADR 008, docs/components/threat-intel.md):
+  pinned ATT&CK v20.1 and KEV 2026.11.23 snapshots; curated profile of 25
+  groups with source sentences (status proposed, needs owner review);
+  computed technique priorities, KEV links from ATT&CK text, coverage gaps
+  against DaC; optional model-written brief with ID checks (not run).
+- Next: owner review of PRs and the finance profile; detection agent (gaps
+  -> DaC rule PRs); first real-model eval run when the owner approves spend.
 - Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
   fields (unverified).
 
