@@ -53,6 +53,11 @@ verdict correct.
   field into a query string.
 - A new gap state goes into `GAP_STATES`, the module docstring and the component doc.
 
+## Case report detail (ADR 009 step 3)
+`analyst_detail` builds `CaseReport.detail` from the record only. Keep it free of model
+calls, so what the analyst reads is what the agent recorded. A new record field the
+analyst needs goes there and into `soar/render.py`, with a test that renders it.
+
 ## Reviewing a case
 Open `<case>.investigation.json`: `rejected_verdicts` shows what the checks caught;
 `factor_tally` shows each factor's state and citations, EV-1 the coverage probe, and

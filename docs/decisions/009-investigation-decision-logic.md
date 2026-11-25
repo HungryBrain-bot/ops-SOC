@@ -316,3 +316,10 @@ running the probe on the Kusto emulator with the seeded replay alerts:
 - **`inconclusive` is refused** when a high-weight factor lacks telemetry and nothing
   malicious is shown: that is `insufficient_telemetry`. This makes the split in point 2
   checkable.
+
+### 2026-11-25 - Step 3 built (full analyst report)
+Built as point 3 describes: `CaseReport.detail` (`analyst_detail`, code-built from the
+record), the SOAR layout in that order for every outcome, and the XSOAR labels
+`ops-soc-confidence` and `ops-soc-agent-status`. Not built here: `needs_analyst_input`
+and the questions for the analyst. Both come with step 4, which creates them. The owner
+confirmed on 2026-11-25 that there is no direct email or Teams notifier.

@@ -44,6 +44,26 @@ required body fields, and answers with the documented codes: XSOAR 201 (created)
 Live mode keeps `build/soar/ledger.json` and refuses to write the same case to the same
 target twice.
 
+Full investigation in the entry (ADR 009 step 3): a case report from the investigation
+agent carries `detail`, built by code from the investigation record and never by a model.
+The XSOAR War Room entry and the SecOps comment (`render.to_markdown`) then show, after the
+summary and any missing telemetry:
+- the agent status and the last rejected verdict, when the agent stopped without a
+  verdict;
+- the factor table (state, evidence, reason) and its tally;
+- telemetry coverage;
+- hypotheses and the timeline;
+- the findings and the evidence they cite;
+- every evidence record, cited or not, with its query;
+- recommended steps, what was not checked, and the run (agent version, models, turns,
+  queries, cost, and the path of the investigation record).
+
+This holds for every outcome, so a budget stop shows what the agent saw. XSOAR also gets
+the labels `ops-soc-confidence` and `ops-soc-agent-status` (`verdict` or `stopped`)
+beside `ops-soc-verdict`, so playbooks can route and notify on them. ops-SOC itself
+notifies no one (owner decision, 2026-11-25: no direct email or Teams notifier). A report
+without `detail` (such as `examples/case_report.json`) renders as before.
+
 ## Why this method
 
 - A stub server over real HTTP exercises serialisation, headers and status handling,
@@ -64,5 +84,7 @@ target twice.
   Does not search XSOAR for an existing incident with the same label before creating.
 - It never changes status, severity, owner, or closes anything, and never creates a
   SecOps case (the v1 API has no method for it).
-- The Markdown is a fixed template; LLM-written summaries come with the investigation
-  agent.
+- The Markdown is a fixed template; only the summary is written by a model (the case
+  note).
+- Long investigations make long entries. Neither XSOAR's nor SecOps' size limit for an
+  entry or comment is checked (not verified).

@@ -49,6 +49,9 @@ class CaseReport:
     mitre_techniques: list[str] = field(default_factory=list)
     secops_case_id: str | None = None  # Google SecOps case holding the source alert
     missing_telemetry: list[str] = field(default_factory=list)  # ADR 009, per factor
+    # ADR 009 point 3: the full investigation for the analyst, for every outcome. Built by
+    # opssoc.agents.investigation.agent.analyst_detail; None for reports from elsewhere.
+    detail: dict | None = None
 
     def __post_init__(self) -> None:
         self.verdict = Verdict(self.verdict)
