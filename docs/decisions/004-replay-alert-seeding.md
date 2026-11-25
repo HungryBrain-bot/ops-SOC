@@ -59,3 +59,7 @@ detection logic.
   `get_incident`, which use the Graph shape for both products. Add the rows if an agent
   ever hunts over `SecurityAlert`.
 - Bumping DaC changes the alerts; bump `DAC_COMMIT` and the CI pin together.
+
+## Amendment (2026-11-24)
+`seed --eval-rules` also runs the eval rules of ADR 007. Their alerts carry `evalRule`
+instead of `dacRule` and say they come from an ops-SOC eval rule.

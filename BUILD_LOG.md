@@ -123,3 +123,22 @@
   Tests use a scripted provider and fake SDK clients. Engine test runs the
   agent's query tool against the emulator in CI.
 - Verified locally: 73 passed, 6 skipped; ruff clean.
+
+## 2026-11-24 - Eval harness
+
+- Built `opssoc/eval/` (ADR 007): ground truth for 12 replay alerts, two eval
+  rules, case matching with strict coverage, deterministic scoring, and a
+  `run` command that needs `--yes` before it spends.
+- Labels: 10 true positives from the OTRF dataset metadata (SDWIN-190518182022,
+  -190319023812, -200722001847, -190625133822, -201019002900, -201023023651;
+  read with git at OTRF d9d40ef, hashes in ground_truth.json). 2 benign by
+  this project's judgment from recorded events: Azure Network Watcher
+  (NetworkWatcherAgent -> netsh trace -> cscript gatherNetworkInfo.vbs ->
+  reg export) and MsMpEng setting Run\WindowsDefender.
+- Eval rules: A3 widened to any reg save/export of HKLM (grouped per host,
+  account, parent); A2 without its writer exclusions. Expected in CI: e1 2
+  alerts, e2 3, total 12 with the DaC alerts.
+- Checked locally: every key fact is a string in its dataset's recorded
+  events. Not run: the agent against the eval (no LLM spend, owner's
+  instruction).
+- Verified locally: 82 passed, 8 skipped; ruff clean.

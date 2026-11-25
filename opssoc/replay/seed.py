@@ -29,8 +29,10 @@ from pathlib import Path
 
 from opssoc.replay import dac_bridge
 
-SEED_LABEL = ("seeded by ops-SOC: detection_As_Code rule {rule} run over recorded OTRF dataset "
+SEED_LABEL = ("seeded by ops-SOC: {kind} {rule} run over recorded OTRF dataset "
               "{dataset} in the Kusto emulator (not a Defender or Sentinel alert)")
+DAC_KIND = "detection_As_Code rule"
+PROBE_KIND = "ops-SOC eval rule (hand-written KQL, not a detection_As_Code rule)"
 SEVERITIES = {"informational", "low", "medium", "high"}
 
 
@@ -94,7 +96,8 @@ def evidence(row: dict) -> list[dict]:
     return items
 
 
-def to_alert(rule_data: dict, row: dict, dataset: str, created: str) -> dict:
+def to_alert(rule_data: dict, row: dict, dataset: str, created: str,
+             kind: str = DAC_KIND) -> dict:
     """One matched row -> one Graph-alerts_v2-shaped alert."""
     rule_label = f"{rule_data['id']} v{rule_data.get('version', 1)} ({rule_data['name']})"
     when = str(row.get("TimeGenerated") or created)
@@ -123,11 +126,11 @@ def to_alert(rule_data: dict, row: dict, dataset: str, created: str) -> dict:
         "evidence": evidence(row),
         "customDetails": row,
         "additionalData": {
-            "provenance": SEED_LABEL.format(rule=rule_label, dataset=dataset),
+            "provenance": SEED_LABEL.format(kind=kind, rule=rule_label, dataset=dataset),
             "replayDataset": dataset,
-            "dacRule": rule_data["id"],
-            "dacRuleVersion": rule_data.get("version", 1),
-            "dacCommit": dac_bridge.DAC_COMMIT,
+            **({"dacRule": rule_data["id"], "dacRuleVersion": rule_data.get("version", 1),
+                "dacCommit": dac_bridge.DAC_COMMIT} if kind == DAC_KIND else
+               {"evalRule": rule_data["id"], "evalRuleVersion": rule_data.get("version", 1)}),
         },
     }
 
@@ -146,15 +149,19 @@ def runnable(rules, loaded: set[str]) -> list:
     return out
 
 
-def seed(kusto, out_path: Path, created: str | None = None) -> dict:
+def seed(kusto, out_path: Path, created: str | None = None,
+         extra_rules: list | None = None) -> dict:
+    """``extra_rules``: (rule object, kind) pairs run after the DaC rules, e.g. the eval
+    rules (opssoc/eval/rules.json, ADR 007)."""
     from opssoc.replay.__main__ import PINS, dataset_rows, load, table_schemas  # noqa: PLC0415
 
     created = created or datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     schemas = table_schemas(with_sentinel=True)
-    rules = runnable(dac_bridge.load_rules(), set(schemas))
+    rules = [(r, DAC_KIND) for r in runnable(dac_bridge.load_rules(), set(schemas))]
+    rules += [(r, kind) for r, kind in extra_rules or [] if runnable([r], set(schemas))]
     alerts: list[dict] = []
     summary: dict = {"engine": kusto.version(), "dac_commit": dac_bridge.DAC_COMMIT,
-                     "rules_run": sorted(r.id for r in rules), "per_dataset": {}}
+                     "rules_run": sorted(r.data["id"] for r, _ in rules), "per_dataset": {}}
     combined: dict[str, list[dict]] = {}
     for name in PINS["datasets"]:
         rows, _ = dataset_rows(name, with_sentinel=True)
@@ -162,11 +169,12 @@ def seed(kusto, out_path: Path, created: str | None = None) -> dict:
             combined.setdefault(table, []).extend(items)
         load(kusto, rows, schemas)
         hits = {}
-        for rule in rules:
+        for rule, kind in rules:
             _, matched = kusto.query(rule.data["sentinel"]["query"])
-            alerts += [to_alert(rule.data, row, name, created) for row in matched]
+            alerts += [to_alert(rule.data, row, name, created, kind) for row in matched]
             if matched:
-                hits[rule.folder.name] = len(matched)
+                hits[getattr(rule, "folder", None) and rule.folder.name or rule.data["id"]] = \
+                    len(matched)
         summary["per_dataset"][name] = hits
     load(kusto, combined, schemas)
     alerts.sort(key=lambda a: (a["firstActivityDateTime"], a["id"]))

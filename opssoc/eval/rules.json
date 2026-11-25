@@ -1,0 +1,68 @@
+{
+  "_about": "Eval rules (ADR 007): hand-written KQL run by `python -m opssoc.replay seed --eval-rules`. They are loosened versions of detection_As_Code endpoint rules, so they match both the recorded attacks and recorded background activity the real rules leave out. They exist to give the eval harness benign cases; they are not detections and are never deployed.",
+  "rules": [
+    {
+      "id": "ops-eval-e1",
+      "version": 1,
+      "status": "eval",
+      "severity": "Medium",
+      "name": "reg.exe saved or exported an HKLM registry key",
+      "description": "reg.exe with save or export and an HKLM path. Loosened from detection_As_Code A3, which only matches the SAM, SYSTEM and SECURITY hive roots. Grouped per host, account and parent process.",
+      "mapping": {
+        "attack": {
+          "techniques": [
+            "T1012"
+          ],
+          "tactics": [
+            "discovery"
+          ]
+        }
+      },
+      "sentinel": {
+        "required_fields": {
+          "SecurityEvent": [
+            "EventID",
+            "NewProcessName",
+            "CommandLine",
+            "Computer",
+            "Account",
+            "ParentProcessName",
+            "TimeGenerated"
+          ]
+        },
+        "query": "SecurityEvent\n| where EventID == 4688 and NewProcessName endswith @\"\\reg.exe\"\n| where CommandLine has_any (\"save\", \"export\") and CommandLine has \"HKLM\"\n| summarize TimeGenerated = min(TimeGenerated), Commands = count(),\n    CommandLine = min(CommandLine) by Computer, Account, NewProcessName, ParentProcessName\n"
+      }
+    },
+    {
+      "id": "ops-eval-e2",
+      "version": 1,
+      "status": "eval",
+      "severity": "Low",
+      "name": "Registry Run key value set",
+      "description": "Sysmon event 13 setting a value under a Run, RunOnce, RunOnceEx, RunServices or Policies\\Explorer\\Run key, by any process. detection_As_Code A2 without its installer, Program Files and Defender exclusions.",
+      "mapping": {
+        "attack": {
+          "techniques": [
+            "T1547.001"
+          ],
+          "tactics": [
+            "persistence"
+          ]
+        }
+      },
+      "sentinel": {
+        "required_fields": {
+          "Event": [
+            "Source",
+            "EventID",
+            "EventData",
+            "Computer",
+            "UserName",
+            "TimeGenerated"
+          ]
+        },
+        "query": "Event\n| where Source == \"Microsoft-Windows-Sysmon\" and EventID == 13\n| extend Data = parse_xml(EventData).DataItem.EventData.Data\n| mv-apply d = Data on (summarize Fields = make_bag(bag_pack(tostring(d[\"@Name\"]), tostring(d[\"#text\"]))))\n| extend EventType = tostring(Fields.EventType), Image = tostring(Fields.Image),\n    TargetObject = tostring(Fields.TargetObject), Details = tostring(Fields.Details)\n| where EventType == \"SetValue\"\n| where TargetObject matches regex @\"(?i)\\\\Software\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\\\CurrentVersion\\\\(Run|RunOnce|RunOnceEx|RunServices|RunServicesOnce|Policies\\\\Explorer\\\\Run)\\\\\"\n| project TimeGenerated, Computer, UserName, Image, TargetObject, Details\n"
+      }
+    }
+  ]
+}

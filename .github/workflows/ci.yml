@@ -60,8 +60,10 @@ jobs:
           echo "Kusto emulator did not start" >&2; exit 1
       - name: Fetch OTRF datasets (pinned by SHA-256)
         run: python -m opssoc.replay fetch
-      - name: Seed alerts (DaC rules per dataset) and load all datasets
-        run: python -m opssoc.replay seed
+      - name: Seed alerts (DaC rules and eval rules per dataset) and load all datasets
+        run: python -m opssoc.replay seed --eval-rules
+      - name: Eval cases cover every seeded alert
+        run: python -m opssoc.eval cases
       - name: Engine tests
         run: python -m pytest -q tests/test_replay_engine.py
       - name: Keep the seeded alerts
