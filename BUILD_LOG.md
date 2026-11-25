@@ -211,3 +211,23 @@
 - Checked by calling `check_verdict` directly: a high-confidence `true_positive` that cites
   only EV-0 and has no hypotheses is accepted; so is an `inconclusive` with no findings and
   an empty `not_checked`.
+
+## 2026-11-25 - ADR 009 accepted; step 1 built: factor checklist
+- The owner approved the ADR 009 design, without a direct email or Teams notifier. Status
+  is now accepted.
+- Built: `factors.json` (set `endpoint-process` v1, F1-F10), `factors.py` (factor checks,
+  decision rules, tally), `factors` and a hypothesis `explanation` in `submit_verdict`,
+  prompt v2 (`agent.md` version 2). The opening message lists the factors.
+- Decision rules now enforced in code: a true positive needs a high-weight malicious
+  factor backed by evidence beyond the alert. A v1-style verdict citing only EV-0 is now
+  rejected (tested); a model can still cite a query it did not reason over. A benign verdict needs F1 or F8 benign and
+  no high-weight factor without telemetry. High confidence needs every high-weight factor
+  answered.
+- Three changes from the ADR text are recorded as a dated amendment: no
+  `answered_by_analyst` state; "beyond EV-0" means evidence of a kind other than alert or
+  incident; hypotheses carry `explanation`.
+- Eval: `citations_valid` keeps the ADR 006 checks; new `factor_checks_valid`,
+  `factor_tally`, and `factor_checks_invalid` in the summary.
+- Tests: 106 passed, 12 skipped; ruff clean. All checks were exercised with the scripted
+  provider (test-only turns). No real model was run, so how a model copes with the extra
+  checks (rejections, turns, cost) is not measured.

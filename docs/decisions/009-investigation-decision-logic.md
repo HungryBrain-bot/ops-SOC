@@ -1,7 +1,8 @@
 # 009. Investigation agent decision logic: factors, telemetry sufficiency, analyst loop
 
 ## Status
-Proposed (2026-11-25). Design only; no code changes until the owner approves.
+Accepted (2026-11-25; owner approved the design, without a direct email or Teams
+notifier). Built in steps; see the amendments at the end for what is built.
 
 ## Context
 
@@ -275,3 +276,23 @@ flowchart LR
 - Analyst answers are unverified statements. Labelling them `analyst-attested` keeps that
   visible; it does not make them true.
 - How a real model behaves under these checks is not measured (no LLM spend approved).
+
+## Amendments
+
+### 2026-11-25 - Step 1 built (factor checklist), with three changes from the text above
+Built: `opssoc/agents/investigation/factors.json` (set `endpoint-process` v1, F1-F10),
+`factors.py` (`check_factors`, `check_decision`, `tally`), `factors` and a hypothesis
+`explanation` in `submit_verdict`, prompt v2.
+- **No `answered_by_analyst` state.** An answer needs a direction (malicious, benign,
+  neutral) for the decision rules, whoever supplied it. Instead, a factor whose
+  `answered_by` is `analyst` (F9) may take a known state only when it cites an `analyst`
+  record. Whether an answer came from the analyst is read from the kinds of evidence it
+  cites.
+- **"Evidence other than EV-0"** is implemented as evidence of a kind other than `alert`
+  or `incident`. An incident only re-states alerts.
+- **Hypotheses carry `explanation: malicious | benign`** so the code can check that at
+  least one benign explanation was considered.
+Until steps 2 and 4 are built, no `coverage` or `analyst` record exists. So
+`unknown_no_telemetry` cannot be used yet, and F9 can only be `unknown_not_checked`. The
+eval scorer keeps `citations_valid` for the ADR 006 checks only, and adds
+`factor_checks_valid` for these.

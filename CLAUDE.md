@@ -13,7 +13,7 @@ docs/decisions/002-soar-writer.md (ADR 002). Connectors and replay:
 docs/decisions/003-connectors-and-replay.md (ADR 003). Replay alerts: ADR 004.
 LLM layer: ADR 005. Investigation agent: ADR 006. Eval harness: ADR 007. Threat intel (finance):
 ADR 008. Investigation decision logic (factors, telemetry sufficiency, analyst
-loop): ADR 009, proposed, not built.
+loop): ADR 009, accepted; step 1 (factor checklist) built.
 
 Before adding an agent, connector, data source or write path beyond Scope,
 check the request is explicit from the owner (Venu).
@@ -88,8 +88,8 @@ server for each target.
   facts in the data, and the agent's query tool; skipped unless OPSSOC_KUSTO_URL is set (CI job
   `replay-kusto`, which checks out detection_As_Code at the pinned commit).
 
-Last run (2026-11-25, intel completion + README): 102 passed, 8 skipped (engine tests,
-run in CI; snapshot tests ran locally); ruff clean.
+Last run (2026-11-25, ADR 009 step 1): 106 passed, 12 skipped (engine tests run in CI;
+snapshot tests not fetched in this session); ruff clean.
 
 Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
 `investigation-agent`, `llm-providers`, `eval-harness`, `threat-intel`. Agent definitions (prompt + budgets):
@@ -119,7 +119,11 @@ Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
   OpenAI via official SDKs (`[llm]` extra), per-task tiers, monthly cap.
 - Built: investigation agent (ADR 006, docs/components/investigation-agent.md):
   evidence records, fenced tool output, cited verdict with checks, budgets,
-  case report to the SOAR writer (dry-run / test).
+  case report to the SOAR writer (dry-run / test). ADR 009 step 1: factor
+  checklist F1-F10 (`factors.json`), factor and decision-rule checks, tally in
+  the record (prompt v2). Steps 2-4 (telemetry probe and
+  `insufficient_telemetry`, full analyst report, analyst questions and
+  feedback store) not built yet.
 - Not verified: any live LLM call (no keys; owner asked not to spend yet);
   how well a real model investigates; OpenAI request shape against the API.
 - Built: eval harness (ADR 007, docs/components/eval-harness.md): 12 cases

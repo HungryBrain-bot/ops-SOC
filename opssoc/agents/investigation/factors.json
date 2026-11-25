@@ -1,0 +1,54 @@
+{
+  "_about": "Factor checklist for the investigation agent (ADR 009 point 1). The model answers every factor of the set with a state and cited evidence; the code checks the answers and applies the decision rules. Weights are this project's judgment, not calibrated: there is no data to fit them yet. 'answered_by' says where an answer can come from: logs, analyst (an analyst evidence record), or both. 'tables' lists the tables a factor reads, for the coverage probe (ADR 009 point 2).",
+  "sets": [
+    {
+      "id": "endpoint-process",
+      "version": 1,
+      "applies_to": "Alerts on a process event on one host (every replay alert today: detection_As_Code A1-A4 and their eval variants).",
+      "tables": {
+        "DeviceProcessEvents": {"host_column": "DeviceName", "time_column": "Timestamp",
+                                "key_columns": ["ProcessCommandLine", "InitiatingProcessFileName", "AccountName"]},
+        "DeviceNetworkEvents": {"host_column": "DeviceName", "time_column": "Timestamp",
+                                "key_columns": ["RemoteIP", "RemoteUrl", "InitiatingProcessFileName"]},
+        "DeviceFileEvents": {"host_column": "DeviceName", "time_column": "Timestamp",
+                             "key_columns": ["FolderPath", "InitiatingProcessFileName"]},
+        "DeviceRegistryEvents": {"host_column": "DeviceName", "time_column": "Timestamp",
+                                 "key_columns": ["RegistryKey", "InitiatingProcessFileName"]},
+        "SecurityEvent": {"host_column": "Computer", "time_column": "TimeGenerated",
+                          "key_columns": ["EventID", "Account"]}
+      },
+      "factors": [
+        {"id": "F1", "name": "lineage", "weight": "high", "answered_by": "logs",
+         "question": "Is the parent and grandparent chain expected for this binary and command line?",
+         "tables": ["DeviceProcessEvents", "SecurityEvent"]},
+        {"id": "F2", "name": "command", "weight": "high", "answered_by": "logs",
+         "question": "Does the command line carry malicious traits (encoding, download cradle, hive dump, LOLBin download)? Confirm it in process telemetry, not only in the alert.",
+         "tables": ["DeviceProcessEvents"]},
+        {"id": "F3", "name": "follow-on", "weight": "high", "answered_by": "logs",
+         "question": "Did the process or its children connect out, write files, change the registry or create persistence?",
+         "tables": ["DeviceNetworkEvents", "DeviceFileEvents", "DeviceRegistryEvents"]},
+        {"id": "F4", "name": "account", "weight": "medium", "answered_by": "both",
+         "question": "Which account ran it, with what privilege, and is that normal for the account?",
+         "tables": ["DeviceProcessEvents", "SecurityEvent"]},
+        {"id": "F5", "name": "prevalence", "weight": "medium", "answered_by": "logs",
+         "question": "On how many hosts, and how often, has this command line or binary run in the last 30 days?",
+         "tables": ["DeviceProcessEvents"]},
+        {"id": "F6", "name": "spread", "weight": "medium", "answered_by": "logs",
+         "question": "Does the same indicator appear on other hosts or accounts?",
+         "tables": ["DeviceProcessEvents", "DeviceNetworkEvents", "DeviceFileEvents"]},
+        {"id": "F7", "name": "related-alerts", "weight": "medium", "answered_by": "logs",
+         "question": "Are there other alerts on this host, account or incident?",
+         "tables": []},
+        {"id": "F8", "name": "benign-explanation", "weight": "high", "answered_by": "both",
+         "question": "Is there an installer, management tool, scheduled task, known test or change that explains it? Change records and test schedules come from the analyst.",
+         "tables": ["DeviceProcessEvents"]},
+        {"id": "F9", "name": "asset-context", "weight": "low", "answered_by": "analyst",
+         "question": "What is the host's role and criticality? No asset inventory is connected, so only the analyst can answer.",
+         "tables": []},
+        {"id": "F10", "name": "timing", "weight": "low", "answered_by": "logs",
+         "question": "Did it happen inside the account's usual hours on this host?",
+         "tables": ["DeviceProcessEvents"]}
+      ]
+    }
+  ]
+}

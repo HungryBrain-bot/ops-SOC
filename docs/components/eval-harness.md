@@ -5,7 +5,8 @@ Code: `opssoc/eval/` (cases, eval rules, scoring, CLI). Decision: ADR 007.
 ## What it does
 Measures the investigation agent on labelled replay alerts: does it reach the expected
 verdict, does it state the key facts, are those facts in the evidence it cites, are its
-citations valid, and what did it cost.
+citations valid, does it pass the factor and decision checks (ADR 009,
+`factor_checks_valid`, with the record's `factor_tally`), and what did it cost.
 
 ## How
 ```

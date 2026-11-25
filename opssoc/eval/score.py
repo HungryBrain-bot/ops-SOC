@@ -8,8 +8,11 @@ Per case:
 - ``grounded_fact_recall``: share of key facts that appear in the verdict text **and** in
   the rows of evidence the verdict cites. A fact stated without citing evidence that
   holds it does not count here.
-- ``citations_valid``: the stored verdict passes the agent's own checks again, re-run on
-  the stored evidence (catches a record edited after the run or a check that changed).
+- ``citations_valid``: the stored verdict passes the agent's citation checks again, re-run
+  on the stored evidence (catches a record edited after the run or a check that changed).
+- ``factor_checks_valid``: it also passes the factor and decision checks of ADR 009
+  (False for records from agent v1, which had no factor answers).
+- ``factor_tally``: the record's factor state counts (None before ADR 009).
 - cost, model turns, queries, rejected verdicts.
 
 What it does not measure: whether the reasoning is sound beyond these facts, whether a
@@ -23,7 +26,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from opssoc.agents.investigation.agent import Evidence, check_verdict
+from opssoc.agents.investigation.agent import Evidence, check_citations, check_verdict
 from opssoc.eval.cases import Case
 
 
@@ -62,7 +65,8 @@ def score_case(case: Case, record: dict) -> dict:
     facts = [_norm(f) for f in case.key_facts]
     if verdict is None:
         result.update(verdict_correct=False, key_fact_recall=0.0, grounded_fact_recall=0.0,
-                      citations_valid=None, facts_missing=case.key_facts)
+                      citations_valid=None, factor_checks_valid=None, factor_tally=None,
+                      facts_missing=case.key_facts)
         return result
     evidence = _evidence(record)
     text = _verdict_text(verdict)
@@ -75,7 +79,9 @@ def score_case(case: Case, record: dict) -> dict:
         verdict_correct=verdict.get("verdict") == case.expected_verdict,
         key_fact_recall=round(len(stated) / len(facts), 3) if facts else 1.0,
         grounded_fact_recall=round(len(grounded) / len(facts), 3) if facts else 1.0,
-        citations_valid=not check_verdict(verdict, evidence),
+        citations_valid=not check_citations(verdict, evidence),
+        factor_checks_valid=not check_verdict(verdict, evidence),
+        factor_tally=record.get("factor_tally"),
         facts_missing=[f for f, n in zip(case.key_facts, facts, strict=True) if n not in stated])
     return result
 
@@ -100,6 +106,7 @@ def summarise(results: list[dict]) -> dict:
         "mean_grounded_fact_recall": round(sum(r["grounded_fact_recall"] for r in results)
                                            / n, 3),
         "citations_invalid": sum(r["citations_valid"] is False for r in results),
+        "factor_checks_invalid": sum(r["factor_checks_valid"] is False for r in results),
         "rejected_verdicts": sum(r["rejected_verdicts"] for r in results),
         "confusion": {f"{e} -> {v}": c for (e, v), c in sorted(confusion.items())},
         "by_label_kind": by_label,
