@@ -150,10 +150,18 @@ def report_markdown(analysis: dict, brief: Brief | None = None) -> str:
     return "\n".join(lines) + "\n"
 
 
-def write_outputs(out: Path, analysis: dict, brief: Brief | None) -> tuple[Path, Path]:
+def write_outputs(out: Path, analysis: dict, brief: Brief | None,
+                  handoff: dict | None = None) -> tuple[Path, Path]:
+    """finance_priorities.json / .md, and finance_gaps.json (the detection agent's input)
+    when coverage was computed. A stale gaps file from an earlier run is removed."""
     out.mkdir(parents=True, exist_ok=True)
     data = dict(analysis, brief=None if brief is None else brief.__dict__)
     js, md = out / "finance_priorities.json", out / "finance_priorities.md"
     js.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
     md.write_text(report_markdown(analysis, brief), encoding="utf-8")
+    gaps = out / "finance_gaps.json"
+    if handoff is not None:
+        gaps.write_text(json.dumps(handoff, indent=2) + "\n", encoding="utf-8")
+    elif gaps.exists():
+        gaps.unlink()
     return js, md

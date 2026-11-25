@@ -187,3 +187,18 @@
 - Not verified: quotes came through a fetch tool that summarises pages, so they are not
   checked byte-for-byte; five sources are news reports of vendor research. Status stays
   `proposed`.
+
+## 2026-11-25 - Threat intel completed: profile approved, gap handoff, check command
+- The owner chose "Approve it" for the web-checked finance profile. `intel/finance_profile.json`
+  is now `status: approved` with an `approval` record, and `check_profile` requires that
+  record whenever the status is approved.
+- New `check` subcommand. CI job `intel` runs it before `analyse`.
+- `analyse` now also writes `build/intel/finance_gaps.json` (schema
+  `opssoc.finance-gaps/1`), the input for the detection agent. It is deterministic, and a
+  run without DaC removes a stale copy.
+- Result with DaC 51080aa: top 25 = 3 exact (A1, A2, A4), 1 partial (T1078, from the
+  T1078.004 rules and B12), 1 pre-compromise (T1588.002), 20 gaps. The component doc's
+  earlier line "21 of the top 25 have no rule" counted T1588.002 among the gaps; the
+  correct figure is 20 gaps plus T1588.002 reported apart. Counts are unchanged (291
+  techniques, 31 CVEs named, 28 in KEV, 15 with known ransomware use).
+- Not run: the model-written brief (no LLM spend approved).

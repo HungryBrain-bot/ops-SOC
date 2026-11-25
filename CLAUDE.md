@@ -78,7 +78,7 @@ server for each target.
 - `tests/test_eval.py` - ground truth integrity, case matching, scoring
   (records written in the test, not model output).
 - `tests/test_threat_intel.py` - ATT&CK / KEV readers, profile checks,
-  priorities, coverage, KEV links, brief ID checks (recorded extracts of the
+  priorities, coverage, KEV links, gap handoff, brief ID checks (recorded extracts of the
   pinned snapshots).
 - `tests/test_intel_snapshots.py` - profile and counts on the real pinned
   snapshots; skipped unless fetched (CI job `intel`).
@@ -87,7 +87,7 @@ server for each target.
   facts in the data, and the agent's query tool; skipped unless OPSSOC_KUSTO_URL is set (CI job
   `replay-kusto`, which checks out detection_As_Code at the pinned commit).
 
-Last run (2026-11-25, finance profile web check): 98 passed, 8 skipped (engine tests,
+Last run (2026-11-25, intel completion + README): 102 passed, 8 skipped (engine tests,
 run in CI; snapshot tests ran locally); ruff clean.
 
 Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
@@ -128,12 +128,13 @@ Skills (`.claude/skills/`): `build-and-document`, `replay-data`,
   `--yes` to spend. Not run with a real model yet.
 - Built: threat intel agent, finance (ADR 008, docs/components/threat-intel.md):
   pinned ATT&CK v20.1 and KEV 2026.11.23 snapshots; curated profile of 25
-  groups, each with a fetched web report of a finance victim (ADR 008 amendment,
-  2026-11-25; status proposed, needs owner review);
+  groups, each with a fetched web report of a finance victim (ADR 008 amendments,
+  2026-11-25; approved by the owner 2026-11-25);
   computed technique priorities, KEV links from ATT&CK text, coverage gaps
-  against DaC; optional model-written brief with ID checks (not run).
-- Next: owner review of the finance profile (eval benign labels approved
-  2026-11-25); detection agent (gaps
+  against DaC, handed to the detection agent as `build/intel/finance_gaps.json`
+  (schema `opssoc.finance-gaps/1`); `check` command; optional model-written brief
+  with ID checks (not run).
+- Next: detection agent (`finance_gaps.json`
   -> DaC rule PRs); first real-model eval run when the owner approves spend.
 - Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
   fields (unverified).

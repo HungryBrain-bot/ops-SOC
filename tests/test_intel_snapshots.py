@@ -36,3 +36,9 @@ def test_analysis_counts(data):
                                 "cves_in_kev": 28, "kev_ransomware_known": 15}
     top = [t["id"] for t in result["priority_techniques"][:5]]
     assert top == ["T1059.001", "T1588.002", "T1566.001", "T1204.002", "T1105"]
+
+
+def test_check_command_on_real_profile(capsys):
+    from opssoc.agents.threat_intel.__main__ import main
+    assert main(["check"]) == 0
+    assert "25 groups" in capsys.readouterr().out
