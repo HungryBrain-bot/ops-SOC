@@ -9,7 +9,8 @@ results to a SOAR (Cortex XSOAR or Google SecOps SOAR). No live tenant exists: e
 and tested here, on recorded OTRF data in the Kusto emulator.
 
 Architecture: docs/decisions/001-architecture.md (ADR 001). SOAR writer:
-docs/decisions/002-soar-writer.md (ADR 002).
+docs/decisions/002-soar-writer.md (ADR 002). Connectors and replay:
+docs/decisions/003-connectors-and-replay.md (ADR 003).
 
 Before adding an agent, connector, data source or write path beyond Scope,
 check the request is explicit from the owner (Venu).
@@ -56,17 +57,32 @@ server for each target.
 - `tests/test_soar.py` - SOAR writer: dry-run output, test push over HTTP to
   the stub (XSOAR and SecOps, incl. pre-processing block, closed
   investigation, unknown case), live-mode credential check and ledger.
+- `tests/test_connectors.py` - read-only guard; Graph requests, token,
+  errors, row cap (fake transport, responses written from docs); replay
+  provenance labels and alerts file.
+- `tests/test_sysmon_mapping.py` - Sysmon -> Defender mapping on a recorded
+  OTRF extract; every column in the vendor schema.
+- `tests/test_replay_engine.py` - replay in the real Kusto emulator; skipped
+  unless OPSSOC_KUSTO_URL is set (CI job `replay-kusto`).
 
-Last run (2026-11-24): 17 passed; ruff clean.
+Last run (2026-11-24): 41 passed, 3 skipped (engine tests, run in CI); ruff
+clean.
 
 ## Current status
 
 - Built: SOAR writer for Cortex XSOAR and Google SecOps SOAR with
   dry-run, test (local stub server) and live modes
   (docs/components/soar-writer.md). ADRs 001-002 accepted.
-- Verified: the writer's requests pass the stub server over HTTP. Not
-  verified: any live SOAR call; SecOps `caseComments.create` URL and body
-  field; XSOAR incident ID = investigation ID.
+- Built: read-only connector interface; Graph security connector (live);
+  replay connector on the Kusto emulator; OTRF Sysmon -> Defender Device*
+  mapping (ours, labelled) on four pinned OTRF datasets
+  (docs/components/connectors.md, otrf-defender-mapping.md).
+- Verified: the writer's requests pass the stub server over HTTP; mapping on
+  recorded OTRF events. Not verified: any live SOAR or Graph call; SecOps
+  `caseComments.create` URL and body field; XSOAR incident ID =
+  investigation ID; Defender's registry hive format.
+- Next: alert seeding for replay (detection_As_Code rules over loaded data);
+  Sentinel tables in replay.
 - Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
   fields (unverified).
 
