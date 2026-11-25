@@ -296,3 +296,23 @@ Until steps 2 and 4 are built, no `coverage` or `analyst` record exists. So
 `unknown_no_telemetry` cannot be used yet, and F9 can only be `unknown_not_checked`. The
 eval scorer keeps `citations_valid` for the ADR 006 checks only, and adds
 `factor_checks_valid` for these.
+
+### 2026-11-25 - Step 2 built (telemetry coverage, `insufficient_telemetry`)
+Built: `coverage.py` (probe, schema re-check after a failed query), coverage record EV-1,
+`insufficient_telemetry` in the agent, `Verdict`, the case report (`missing_telemetry`)
+and the SOAR entry; `HiddenTablesConnector` and two eval cases with every factor table
+hidden; scorer count. Prompt v3, factor set v2. Changes from the text above, found by
+running the probe on the Kusto emulator with the seeded replay alerts:
+- **Missing tables after a failed query come from a schema query, not from the error
+  text.** The emulator answers a query on a missing table with a bare HTTP 400 that does
+  not name the table.
+- **`rows_before_only` became `stops_before_alert`, with a 15-minute tolerance.** Each OTRF
+  recording ends minutes after the attack, so "no rows after the alert" marked present
+  data as a gap. Now a source is a gap only when its last row is more than 15 minutes
+  before the alert.
+- **`RemoteUrl` is no longer a key column of DeviceNetworkEvents.** It is empty in every
+  mapped Sysmon network row, as it often is for IP-only connections, so the whole table
+  read as a gap. The set is now `endpoint-process` v2.
+- **`inconclusive` is refused** when a high-weight factor lacks telemetry and nothing
+  malicious is shown: that is `insufficient_telemetry`. This makes the split in point 2
+  checkable.

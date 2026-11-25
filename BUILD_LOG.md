@@ -231,3 +231,31 @@
 - Tests: 106 passed, 12 skipped; ruff clean. All checks were exercised with the scripted
   provider (test-only turns). No real model was run, so how a model copes with the extra
   checks (rejections, turns, cost) is not measured.
+
+## 2026-11-25 - ADR 009 step 2: telemetry coverage and insufficient_telemetry
+- Built: `coverage.py` (probe per factor table: schema, rows for the host in the window
+  from 24 h before to 1 h after the alert, empty key columns), coverage record EV-1,
+  schema re-check after a failed query, and `insufficient_telemetry` in the agent,
+  `Verdict`, the case report (`missing_telemetry`) and the SOAR entry. Prompt v3, factor
+  set v2. ADR 009 amended.
+- Ran the probe on the Kusto emulator (kustainer image at CI's digest, started locally)
+  with the 12 seeded replay alerts. What it changed:
+  - The emulator answers a query on a missing table with a bare HTTP 400 and does not
+    name the table. Missing tables are now found by a schema query.
+  - Each recording ends minutes after the attack, so `rows_before_only` flagged present
+    data as a gap. It is now `stops_before_alert`, with a 15-minute tolerance.
+  - `RemoteUrl` is empty in every mapped Sysmon network row. It is dropped from the key
+    columns, which bumps the set to v2.
+  - `first` is a reserved word in KQL; the columns are now `first_seen` and `last_seen`.
+- What the probe reports on recorded data: the A3 host has process, file and Security
+  rows around the alert, and no network or registry rows. The runkey-elevated host has no
+  process rows. In the bitsadmin and esentutl datasets, the Sysmon-mapped rows sit about
+  4 h and 8 h away from the Security events that set the alert time, so the probe reports
+  Device* gaps. [Likely] cause: a timezone offset between the two sources in those
+  recordings; not checked against OTRF. This bears on eval cases tp-a4-bitsadmin and
+  tp-a3-esentutl-vss: a model that trusts the probe may answer insufficient_telemetry.
+- Eval: two cases (`it-*-no-telemetry`) replay an existing alert with every factor table
+  hidden; expected `insufficient_telemetry`. Label kind `ops-soc-construction`; owner
+  review pending.
+- Tests: 114 passed, 13 skipped; engine tests 9 passed locally in the emulator; ruff clean.
+  The agent turns are scripted; no real model was run.

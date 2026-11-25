@@ -105,10 +105,24 @@ def _kinds(ids: list[str], evidence: dict) -> set[str]:
     return {evidence[i].kind for i in ids if i in evidence}
 
 
+def _shows_gap(factor: Factor, ids: list[str], evidence: dict) -> bool:
+    """A cited coverage record has a row for one of the factor's tables in a state other
+    than present."""
+    for i in ids:
+        ev = evidence.get(i)
+        if ev is None or ev.kind != COVERAGE:
+            continue
+        for row in ev.rows:
+            if row.get("table") in factor.tables and row.get("state") not in (None, "present"):
+                return True
+    return False
+
+
 def check_factors(verdict: dict, evidence: dict, fset: FactorSet) -> list[str]:
     """Every factor answered once; a known state cites evidence; `unknown_no_telemetry`
-    cites a coverage record; an analyst-only factor in a known state cites an analyst
-    record; two or more hypotheses with at least one benign explanation."""
+    cites a coverage record showing a gap in one of the factor's tables; an analyst-only
+    factor in a known state cites an analyst record; two or more hypotheses with at least
+    one benign explanation."""
     problems = []
     answers = verdict.get("factors") or []
     seen: dict[str, int] = {}
@@ -127,9 +141,10 @@ def check_factors(verdict: dict, evidence: dict, fset: FactorSet) -> list[str]:
         kinds = _kinds(ids, evidence)
         if state in (MALICIOUS, BENIGN, NEUTRAL) and not ids:
             problems.append(f"{name}: state {state} cites no evidence")
-        if state == NO_TELEMETRY and COVERAGE not in kinds:
+        if state == NO_TELEMETRY and not _shows_gap(factor, ids, evidence):
+            tables = ", ".join(factor.tables) or "none"
             problems.append(f"{name}: unknown_no_telemetry must cite a coverage record "
-                            "that shows the gap")
+                            f"that shows a gap in one of the factor's tables ({tables})")
         if (factor.answered_by == "analyst" and state in (MALICIOUS, BENIGN, NEUTRAL)
                 and ANALYST not in kinds):
             problems.append(f"{name}: only the analyst can answer {factor.id}; cite an "
@@ -165,15 +180,20 @@ def check_decision(verdict: dict, evidence: dict, fset: FactorSet) -> list[str]:
       than the alert or incident records (the alert alone is not enough);
     - benign: F1 or F8 is a benign indicator, and no high-weight factor is
       unknown_no_telemetry (missing data blocks clearing an alert);
-    - confidence high: no high-weight factor is unknown.
+    - confidence high: no high-weight factor is unknown;
+    - insufficient_telemetry: a high-weight factor is unknown_no_telemetry, and the
+      true_positive condition is not met;
+    - inconclusive: not while a high-weight factor is unknown_no_telemetry and the
+      true_positive condition is not met (that is insufficient_telemetry).
     Missing data does not block a true positive."""
     problems = []
     answers = _answers(verdict, fset)
     high = [(f, a) for f, a in answers if f.weight == "high"]
     v = verdict.get("verdict")
+    backed = [f.id for f, a in high if a.get("state") == MALICIOUS
+              and _kinds(a.get("evidence_ids") or [], evidence) - set(ALERT_KINDS)]
+    gaps = [f.id for f, a in high if a.get("state") == NO_TELEMETRY]
     if v == "true_positive":
-        backed = [f.id for f, a in high if a.get("state") == MALICIOUS
-                  and _kinds(a.get("evidence_ids") or [], evidence) - set(ALERT_KINDS)]
         if not backed:
             problems.append("true_positive needs a high-weight factor marked "
                             "malicious_indicator that cites evidence beyond the alert "
@@ -182,16 +202,46 @@ def check_decision(verdict: dict, evidence: dict, fset: FactorSet) -> list[str]:
         if not any(f.id in BENIGN_DECIDING and a.get("state") == BENIGN for f, a in answers):
             problems.append(f"benign needs {' or '.join(BENIGN_DECIDING)} marked "
                             "benign_indicator (evidence for the benign explanation)")
-        gaps = [f.id for f, a in high if a.get("state") == NO_TELEMETRY]
         if gaps:
             problems.append(f"benign is not allowed while high-weight factors lack "
                             f"telemetry: {gaps}")
+    if v == "insufficient_telemetry":
+        if not gaps:
+            problems.append("insufficient_telemetry needs a high-weight factor marked "
+                            "unknown_no_telemetry, citing the coverage record")
+        if backed:
+            problems.append(f"insufficient_telemetry is not allowed when the telemetry "
+                            f"there shows malicious activity ({backed}): that is "
+                            "true_positive")
+    if v == "inconclusive" and gaps and not backed:
+        problems.append(f"high-weight factors lack telemetry ({gaps}): the verdict is "
+                        "insufficient_telemetry, not inconclusive")
     if verdict.get("confidence") == "high":
         unknown = [f.id for f, a in high if a.get("state") in UNKNOWN]
         if unknown:
             problems.append(f"confidence high is not allowed while high-weight factors "
                             f"are unknown: {unknown}")
     return problems
+
+
+def missing_telemetry(verdict: dict, evidence: dict, fset: FactorSet) -> list[dict]:
+    """For each factor marked unknown_no_telemetry: the gaps its cited coverage records
+    show in the factor's tables. Computed by code from the records, for the report."""
+    out = []
+    for f, a in _answers(verdict, fset):
+        if a.get("state") != NO_TELEMETRY:
+            continue
+        tables = []
+        for i in a.get("evidence_ids") or []:
+            ev = evidence.get(i)
+            if ev is None or ev.kind != COVERAGE:
+                continue
+            for row in ev.rows:
+                if row.get("table") in f.tables and row.get("state") != "present":
+                    tables.append({"table": row["table"], "state": row.get("state"),
+                                   "detail": row.get("detail"), "evidence_id": i})
+        out.append({"factor": f.id, "name": f.name, "weight": f.weight, "gaps": tables})
+    return out
 
 
 def tally(verdict: dict, fset: FactorSet) -> dict:

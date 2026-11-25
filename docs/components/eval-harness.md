@@ -32,6 +32,14 @@ A run writes `build/eval/<provider>-<time>/<case>.investigation.json` and `score
 | tp-e2-runkey-elevated | eval e2, runkey-elevated-user | true_positive | OTRF SDWIN-200722001847 |
 | bn-e1-network-watcher-diagnostics | eval e1, runkey-standard-user | benign | ops-SOC judgment |
 | bn-e2-defender-run-key | eval e2, runkey-standard-user | benign | ops-SOC judgment |
+| it-a3-reg-save-sam-no-telemetry | DaC A3, reg-dump-sam, factor tables hidden | insufficient_telemetry | ops-SOC construction (pending owner review) |
+| it-bn-e2-defender-run-key-no-telemetry | eval e2, runkey-standard-user, factor tables hidden | insufficient_telemetry | ops-SOC construction (pending owner review) |
+
+Missing-telemetry cases (ADR 009 step 2): a case with `hide_tables` replays an alert that
+another case labels, through `HiddenTablesConnector` (`opssoc/eval/hiding.py`). Any query
+that names a hidden table fails with the emulator's bare HTTP 400, so the agent cannot tell
+a hidden table from a missing one. With every factor table hidden, the decision rules allow
+only `insufficient_telemetry`. The key facts are the names of the hidden tables.
 
 Benign basis (recorded in the runkey-standard-user dataset; both labels approved by the owner on 2026-11-25):
 - **Network Watcher**: `NetworkWatcherAgent.exe` (Azure Network Watcher VM extension under
@@ -49,8 +57,10 @@ another model. Strict alert coverage keeps the eval in step with the rules and d
 ## What it does not do
 - It does not judge reasoning quality beyond verdict and key facts, or check that a cited
   row says what a finding claims.
-- 12 cases, 10 of them true positives, several sharing the same activity: a smoke test,
-  not a benchmark. No variance across runs unless you run it several times.
+- 14 cases on 12 alerts, 10 of them true positives, several sharing the same activity: a
+  smoke test, not a benchmark. The two missing-telemetry cases hide every table, so the
+  decision rules leave only one acceptable verdict. They test that the agent reports the
+  gap and does not guess. They do not test partial gaps. No variance across runs unless you run it several times.
 - No cases from Defender-native or Sentinel-native alerts, identity or cloud data.
 - Two labels are this project's judgment.
 - It has not been run with a real model yet.

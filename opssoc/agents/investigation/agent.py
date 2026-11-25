@@ -21,6 +21,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from opssoc.agents import AgentDefinition, load_definition
+from opssoc.agents.investigation import coverage as cov
 from opssoc.agents.investigation import factors as fx
 from opssoc.case import CaseReport, EvidenceItem, Severity, Verdict
 from opssoc.connectors.base import QueryResult, ReadOnlyViolation, SecurityConnector
@@ -37,7 +38,7 @@ from opssoc.llm.base import (
 )
 
 DEFINITION = Path(__file__).with_name("agent.md")
-VERDICTS = ("true_positive", "benign", "inconclusive")
+VERDICTS = ("true_positive", "benign", "inconclusive", "insufficient_telemetry")
 CONFIDENCE = ("low", "medium", "high")
 EV_ID = re.compile(r"^EV-\d+$")
 TIME_PREFIX = re.compile(r"^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}")
@@ -139,6 +140,7 @@ class Investigation:
     agent_version: str = ""
     factor_set: str = ""
     factor_tally: dict | None = None
+    missing_telemetry: list[dict] = field(default_factory=list)
 
     def to_json(self) -> dict:
         data = asdict(self)
@@ -231,6 +233,9 @@ class InvestigationAgent:
         self.max_usd = d.number("max_case_usd", 3.0)
         self.rows_shown = int(d.number("rows_shown", 50))
         self.cell_chars = int(d.number("cell_chars", 1500))
+        self.coverage_before = d.number("coverage_before_hours", 24)
+        self.coverage_after = d.number("coverage_after_hours", 1)
+        self.coverage_stale = d.number("coverage_stale_minutes", 15)
 
     # -- evidence ---------------------------------------------------------------
 
@@ -244,6 +249,14 @@ class InvestigationAgent:
             rows = [obj or {}]
             ev = Evidence(f"EV-{n}", kind, self.connector.backend, query, purpose,
                           _provenance_of(obj or {}), [], rows, False, _hash(rows))
+        inv.evidence.append(ev)
+        return ev
+
+    def _coverage(self, inv: Investigation, rows: list[dict], purpose: str,
+                  query: str | None = None) -> Evidence:
+        ev = Evidence(f"EV-{len(inv.evidence)}", "coverage", self.connector.backend, query,
+                      purpose, [self.connector.backend, "telemetry coverage, computed by "
+                                "ops-SOC code (ADR 009)"], [], rows, False, _hash(rows))
         inv.evidence.append(ev)
         return ev
 
@@ -284,6 +297,17 @@ class InvestigationAgent:
         except KeyError as exc:
             return ToolResult(call.id, f"not found: {exc}", is_error=True)
         except (ValueError, RuntimeError) as exc:  # query errors from the engine / API
+            if call.name == "run_hunting_query":
+                missing = cov.unreadable_tables(self.connector, str(args.get("kql", "")))
+                if missing:
+                    ev = self._coverage(inv, [{"table": t, "state": "missing_table",
+                                               "detail": str(exc)[:300],
+                                               "source": "query failed; schema query for "
+                                                         "this table failed too"}
+                                              for t in missing],
+                                        "a query named a table that cannot be read",
+                                        str(args.get("kql", "")))
+                    return ToolResult(call.id, self._show(ev), is_error=True)
             return ToolResult(call.id, fence(None, {"error": str(exc)[:2000]}), is_error=True)
         return ToolResult(call.id, f"unknown tool {call.name}", is_error=True)
 
@@ -300,12 +324,18 @@ class InvestigationAgent:
         first = self._record(inv, "alert", None, "the alert under investigation", obj=alert)
         fset = fx.for_alert(alert)
         inv.factor_set = fset.label
+        probed = self._coverage(inv, cov.probe(self.connector, fset, alert,
+                                               self.coverage_before, self.coverage_after,
+                                               self.coverage_stale),
+                                "telemetry coverage for the factor tables around the alert")
         tier = Tier(self.definition.settings.get("tier_investigate", "reasoning"))
         conv = self.provider.conversation(tier, self.definition.prompt, TOOLS,
                                           purpose=f"investigate {alert_id}")
         inv.models.append(conv.model)
         opening = (f"Investigate alert {alert_id}.\n\n{fset.render()}\n\n"
-                   f"The alert is evidence {first.id}:\n{self._show(first)}")
+                   f"The alert is evidence {first.id}:\n{self._show(first)}\n\n"
+                   f"Telemetry coverage for the factor tables is evidence {probed.id}:\n"
+                   f"{self._show(probed)}")
         try:
             turn = self._turn(inv, lambda: conv.send(opening))
             nudged = False
@@ -324,6 +354,8 @@ class InvestigationAgent:
                         inv.verdict = call.arguments
                         inv.status = "verdict"
                         inv.factor_tally = fx.tally(call.arguments, fset)
+                        inv.missing_telemetry = fx.missing_telemetry(
+                            call.arguments, {e.id: e for e in inv.evidence}, fset)
                         break
                     inv.rejected_verdicts.append({"verdict": call.arguments,
                                                   "problems": problems})
@@ -411,6 +443,8 @@ def _label(ev: Evidence) -> str:
         return "live"
     if "seeded by" in text:
         return "seeded alert"
+    if "computed by ops-SOC" in text:
+        return "computed"
     return "recorded"
 
 
@@ -446,4 +480,7 @@ def to_case_report(inv: Investigation, alert: dict) -> CaseReport:
         summary=f"[{v.get('confidence', 'n/a')} confidence] {summary}" if v else summary,
         source_alert_id=inv.alert_id, evidence=items,
         recommended_actions=list(v.get("recommended_actions") or []),
-        mitre_techniques=list(v.get("mitre_techniques") or alert.get("mitreTechniques") or []))
+        mitre_techniques=list(v.get("mitre_techniques") or alert.get("mitreTechniques") or []),
+        missing_telemetry=[f"{m['factor']} {m['name']} ({m['weight']}): " + "; ".join(
+            f"{g['table']} {g['state']} [{g['evidence_id']}]" for g in m["gaps"])
+            for m in inv.missing_telemetry])
