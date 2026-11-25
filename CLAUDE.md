@@ -59,14 +59,20 @@ server for each target.
   investigation, unknown case), live-mode credential check and ledger.
 - `tests/test_connectors.py` - read-only guard; Graph requests, token,
   errors, row cap (fake transport, responses written from docs); replay
-  provenance labels and alerts file.
+  provenance labels (Device* and SecurityEvent / Event), alerts file,
+  `Prefer` header on alert reads.
+- `tests/test_seed.py` - seeded alert shape, evidence, stable IDs, rule
+  selection (offline, rows copied from detection_As_Code's results).
 - `tests/test_sysmon_mapping.py` - Sysmon -> Defender mapping on a recorded
   OTRF extract; every column in the vendor schema.
-- `tests/test_replay_engine.py` - replay in the real Kusto emulator; skipped
-  unless OPSSOC_KUSTO_URL is set (CI job `replay-kusto`).
+- `tests/test_replay_engine.py` - replay in the real Kusto emulator, incl.
+  the 7 seeded alerts; skipped unless OPSSOC_KUSTO_URL is set (CI job
+  `replay-kusto`, which checks out detection_As_Code at the pinned commit).
 
-Last run (2026-11-24): 41 passed, 3 skipped (engine tests, run in CI); ruff
-clean.
+Last run (2026-11-24, replay alerts): 49 passed, 5 skipped (engine tests,
+run in CI); ruff clean.
+
+Skills (`.claude/skills/`): `build-and-document`, `replay-data`.
 
 ## Current status
 
@@ -75,14 +81,20 @@ clean.
   (docs/components/soar-writer.md). ADRs 001-002 accepted.
 - Built: read-only connector interface; Graph security connector (live);
   replay connector on the Kusto emulator; OTRF Sysmon -> Defender Device*
-  mapping (ours, labelled) on four pinned OTRF datasets
+  mapping (ours, labelled) on six pinned OTRF datasets
   (docs/components/connectors.md, otrf-defender-mapping.md).
+- Built: replay alert seeding (ADR 004, docs/components/replay-alerts.md):
+  detection_As_Code rules run per dataset in the emulator -> Graph
+  alerts_v2-shaped alerts with provenance, not pre-labelled. DaC is imported
+  from a pinned checkout (`OPSSOC_DAC_PATH`); replay also loads Sentinel
+  `SecurityEvent` / `Event` (DaC's mapping). Expected: 7 alerts (A1-A4).
 - Verified: the writer's requests pass the stub server over HTTP; mapping on
   recorded OTRF events. Not verified: any live SOAR or Graph call; SecOps
   `caseComments.create` URL and body field; XSOAR incident ID =
   investigation ID; Defender's registry hive format.
-- Next: alert seeding for replay (detection_As_Code rules over loaded data);
-  Sentinel tables in replay.
+- Not verified: Graph `categories` value format (seeded alerts use CamelCase
+  tactics).
+- Next: investigation agent; eval harness; threat intel agent.
 - Open: CISA sources beyond KEV; Google SecOps `caseComments.create` body
   fields (unverified).
 

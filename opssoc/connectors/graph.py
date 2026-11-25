@@ -34,6 +34,9 @@ from opssoc.http import MissingCredentials, Request, Transport
 GRAPH = "https://graph.microsoft.com/v1.0"
 LOGIN = "https://login.microsoftonline.com"
 SCOPE = "https://graph.microsoft.com/.default"
+# Without it, Graph returns "unknownFutureValue" for enum members added after the enum was
+# published, e.g. newer serviceSource / detectionSource values (Graph alert docs).
+PREFER = {"Prefer": "include-unknown-enum-members"}
 
 
 class GraphError(RuntimeError):
@@ -71,11 +74,11 @@ class GraphSecurityConnector(SecurityConnector):
 
     def alerts_request(self, top: int = 50) -> Request:
         query = urlencode({"$top": top, "$orderby": "createdDateTime desc"})
-        return Request("GET", f"{GRAPH}/security/alerts_v2?{query}", self._auth())
+        return Request("GET", f"{GRAPH}/security/alerts_v2?{query}", self._auth(PREFER))
 
     def incident_request(self, incident_id: str) -> Request:
         return Request("GET", f"{GRAPH}/security/incidents/{quote(incident_id, safe='')}"
-                              "?$expand=alerts", self._auth())
+                              "?$expand=alerts", self._auth(PREFER))
 
     # -- calls --------------------------------------------------------------
 
@@ -95,8 +98,8 @@ class GraphSecurityConnector(SecurityConnector):
 
     # -- auth ---------------------------------------------------------------
 
-    def _auth(self) -> dict:
-        return {"Authorization": f"Bearer {self._token or '<token>'}"}
+    def _auth(self, extra: dict | None = None) -> dict:
+        return {"Authorization": f"Bearer {self._token or '<token>'}", **(extra or {})}
 
     def _ensure_token(self) -> None:
         missing = [k for k in self.credential_env_vars if not self.env.get(k)]
@@ -113,7 +116,7 @@ class GraphSecurityConnector(SecurityConnector):
 
     def _send(self, request: Request) -> dict:
         self._ensure_token()
-        request.headers = self._auth()
+        request.headers = {**request.headers, **self._auth()}
         response = self.transport.send(request)
         if response.status != 200:
             error = response.body.get("error", {})

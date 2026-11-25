@@ -74,3 +74,27 @@
   CI (job `replay-kusto`, same Kustainer digest as detection_As_Code).
 - Verified locally: 41 tests pass, ruff clean. Not verified: any live Graph
   call.
+
+## 2026-11-24 - Replay alerts seeded from detection_As_Code
+
+- Built `opssoc/replay/seed.py` and `dac_bridge.py`: each pinned OTRF dataset
+  is loaded alone, every non-experimental DaC rule whose Sentinel tables are
+  loaded runs over it, and each matched row becomes a Graph alerts_v2-shaped
+  alert in `data/replay/alerts.json`. ADR 004; docs/components/replay-alerts.md.
+- DaC is imported from a checkout at commit 51080aa (`OPSSOC_DAC_PATH`); CI
+  checks it out and fails if the workflow and code pins differ. Seeding needs
+  PyYAML (`[seed]` extra); runtime stays stdlib-only.
+- Replay now also loads `SecurityEvent` / `Event` (DaC's mapping; 45,370
+  recorded events over six datasets, the same total DaC reports) and labels
+  those results. Added two OTRF datasets (runkey-standard-user,
+  sam-copy-esentutl) so replay holds the six datasets DaC's endpoint rules
+  were tested on. Device* totals now 129 / 301 / 252 / 14,076.
+- Graph connector sends `Prefer: include-unknown-enum-members` on alert and
+  incident reads.
+- Checked (fetched 2026-11-24): Graph alert, alertEvidence, deviceEvidence,
+  processEvidence, registryValueEvidence, fileDetails, userAccount pages for
+  property names. Not found: a documented value set for `categories`.
+- Expected seeded alerts: 7 (A1 2, A2 2, A3 2, A4 1), equal to DaC's committed
+  Kusto results; asserted in tests/test_replay_engine.py (CI only, no Docker here).
+- Added skills `build-and-document` and `replay-data`.
+- Verified locally: 49 passed, 5 skipped; ruff clean.

@@ -1,12 +1,13 @@
 """Replay connector: the same interface as Graph, answered from recorded data (ADR 003).
 
 Hunting queries run in the Kusto emulator over OTRF data loaded by
-``python -m opssoc.replay load``. Results that read a Device* table are
-labelled as mapped by this project (opssoc/replay/sysmon_to_defender.py).
+``python -m opssoc.replay load`` or ``seed``. Results that read a Device* table
+are labelled as mapped by this project (opssoc/replay/sysmon_to_defender.py);
+results that read SecurityEvent or Event as mapped by detection_As_Code.
 
-Alerts and incidents come from ``data/replay/alerts.json`` when present: the
-seeding step that writes it (detection_As_Code rules run over the loaded data)
-is not built yet, so until then there are no replay alerts.
+Alerts and incidents come from ``data/replay/alerts.json``, written by
+``python -m opssoc.replay seed`` (detection_As_Code rules run over each
+dataset, ADR 004). Without that file there are no replay alerts.
 """
 
 from __future__ import annotations
@@ -16,10 +17,12 @@ import re
 from pathlib import Path
 
 from opssoc.connectors.base import QueryResult, SecurityConnector, cap, guard_query
+from opssoc.replay import dac_bridge
 from opssoc.replay.kusto import KustoClient
 from opssoc.replay.sysmon_to_defender import MAPPING_LABEL, TABLES
 
 DEVICE_TABLE = re.compile(r"\b(" + "|".join(TABLES) + r")\b")
+SENTINEL_TABLE = re.compile(r"\b(" + "|".join(dac_bridge.SENTINEL_TABLES) + r")\b")
 
 
 class ReplayConnector(SecurityConnector):
@@ -39,6 +42,9 @@ class ReplayConnector(SecurityConnector):
         tables = sorted(set(DEVICE_TABLE.findall(kql)))
         if tables:
             provenance.append(f"{', '.join(tables)}: {MAPPING_LABEL}")
+        sentinel = sorted(set(SENTINEL_TABLE.findall(kql)))
+        if sentinel:
+            provenance.append(f"{', '.join(sentinel)}: {dac_bridge.MAPPING_LABEL}")
         columns, rows = self.kusto.query(kql)
         rows, truncated = cap(rows)
         return QueryResult(kql, self.backend, columns, rows, provenance, truncated)

@@ -8,6 +8,11 @@
       "sha256": "812da270cf8cda6f1948fb6275410f15dc1794d0bd6b623c9c25b2518285019c",
       "description": "Empire VBS launcher: wscript.exe starts an encoded PowerShell stager."
     },
+    "otrf-empire-runkey-standard-user": {
+      "path": "datasets/atomic/windows/persistence/host/empire_persistence_registry_modification_run_keys_standard_user.zip",
+      "sha256": "2965f791bcaf5e6ccfc4059985e81fd7e67ec87f17855b6c383edd1b03a19c36",
+      "description": "Empire agent as a standard user writes an HKCU Run key that relaunches an encoded stager; about 40k events of host background."
+    },
     "otrf-empire-runkey-elevated-user": {
       "path": "datasets/atomic/windows/persistence/host/empire_persistence_registry_modification_run_keys_elevated_user.zip",
       "sha256": "2809354d679025859d723be3ceb1e2c9f9e5dde2ebec5bbea7c398e165a9b67d",
@@ -22,6 +27,11 @@
       "path": "datasets/atomic/windows/defense_evasion/host/cmd_bitsadmin_download_psh_script.zip",
       "sha256": "8fb7bc9f3d82f672dc39a55e50006137aa540c4a9860acdcc5d08a4fd609b594",
       "description": "cmd.exe runs bitsadmin.exe /transfer to download a file from GitHub."
+    },
+    "otrf-sam-copy-esentutl": {
+      "path": "datasets/atomic/windows/credential_access/host/cmd_sam_copy_esentutl.zip",
+      "sha256": "f7a71135778aeff605abcb88a14a076f0814ab5cb136d07103bdf13c45551b64",
+      "description": "esentutl.exe copies the SAM hive through a volume shadow copy (/y /vss)."
     }
   }
 }

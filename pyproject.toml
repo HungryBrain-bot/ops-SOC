@@ -11,6 +11,8 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
+# Alert seeding imports detection_As_Code, which needs PyYAML (ADR 004).
+seed = ["PyYAML>=6.0"]
 
 [tool.setuptools.packages.find]
 include = ["opssoc*"]

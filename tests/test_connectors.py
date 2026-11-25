@@ -76,6 +76,15 @@ def test_graph_incident_request_escapes_id():
     GraphSecurityConnector(ENV, transport).get_incident("1/2")
     assert transport.sent[1].url == (
         "https://graph.microsoft.com/v1.0/security/incidents/1%2F2?$expand=alerts")
+    assert transport.sent[1].headers == {"Authorization": "Bearer tok",
+                                         "Prefer": "include-unknown-enum-members"}
+
+
+def test_graph_alerts_request_asks_for_unknown_enum_members():
+    transport = FakeTransport(token(), Response(200, {"value": [{"id": "a"}]}))
+    assert GraphSecurityConnector(ENV, transport).list_alerts(5) == [{"id": "a"}]
+    assert transport.sent[1].headers["Prefer"] == "include-unknown-enum-members"
+    assert "%24top=5" in transport.sent[1].url
 
 
 def test_graph_refuses_management_before_any_call():
@@ -124,6 +133,15 @@ def test_replay_hunt_labels_mapped_tables():
     assert transport.sent[0].body["csl"].startswith("DeviceProcessEvents")
     assert any("not Defender telemetry" in p for p in result.provenance)
     assert any("timespan P1D ignored" in p for p in result.provenance)
+
+
+def test_replay_hunt_labels_sentinel_tables():
+    transport = FakeTransport(Response(200, frames([("EventID", "int")], [[4688]])))
+    connector = ReplayConnector(KustoClient("http://kusto:8080", transport=transport))
+    result = connector.hunt("SecurityEvent | where EventID == 4688 | project EventID")
+    label = "SecurityEvent: mapped by detection_As_Code"
+    assert any(p.startswith(label) for p in result.provenance)
+    assert not any("not Defender telemetry" in p for p in result.provenance)
 
 
 def test_replay_refuses_management():
